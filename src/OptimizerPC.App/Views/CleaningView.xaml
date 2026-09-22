@@ -1,0 +1,383 @@
+<UserControl x:Class="OptimizerPC.App.Views.CleaningView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:OptimizerPC.App.Localization"
+             xmlns:vm="clr-namespace:OptimizerPC.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:CleaningViewModel}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+        <StackPanel>
+
+            <!-- Aviso de erro -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Background="{DynamicResource Brush.Danger.Soft}"
+                    BorderBrush="{DynamicResource Brush.Danger}"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Warning}"
+                          Stretch="Uniform" Width="16" Height="16"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Danger.Text}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               Style="{StaticResource Text.Body}"
+                               Foreground="{DynamicResource Brush.Danger.Text}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Operacao em andamento -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Text="{Binding BusyText}" Style="{StaticResource Text.Label}" />
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                Padding="10,4"
+                                MinHeight="26"
+                                Command="{Binding CancelCommand}"
+                                Content="{loc:Loc Common.Cancel}" />
+                    </Grid>
+                    <ProgressBar Style="{StaticResource ProgressBar.Thin}"
+                                 Margin="0,10,0,0"
+                                 Maximum="100"
+                                 Value="{Binding ProgressPercent, Mode=OneWay}"
+                                 IsIndeterminate="{Binding IsProgressIndeterminate}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ VARREDURA ============ -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Text="{loc:Loc Cleanup.Title}" Style="{StaticResource Text.Section}" />
+                            <TextBlock Text="{loc:Loc Cleanup.Subtitle}"
+                                       Style="{StaticResource Text.Caption}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top">
+                            <Button Style="{StaticResource Button.Ghost}"
+                                    Margin="0,0,8,0"
+                                    Command="{Binding ScanCommand}"
+                                    IsEnabled="{Binding IsIdle}"
+                                    Content="{loc:Loc Common.Refresh}" />
+                            <Button Style="{StaticResource Button.Primary}"
+                                    Command="{Binding CleanCommand}"
+                                    IsEnabled="{Binding IsIdle}"
+                                    Content="{loc:Loc Cleanup.Run}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Text="{Binding StatusText}"
+                               Style="{StaticResource Text.Label}"
+                               Foreground="{DynamicResource Brush.Accent}"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}" />
+
+                    <Grid Margin="0,14,0,0"
+                          Visibility="{Binding HasTargets, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding SelectionText}" Style="{StaticResource Text.Label}" />
+                            <TextBlock Text="{Binding EstimateText}" Style="{StaticResource Text.Caption}" Margin="0,3,0,0" />
+                        </StackPanel>
+
+                        <Button Grid.Column="1"
+                                Style="{StaticResource Button.Ghost}"
+                                Margin="14,0,0,0"
+                                VerticalAlignment="Center"
+                                Command="{Binding SelectAllCommand}"
+                                Content="{loc:Loc Common.SelectAll}" />
+                        <Button Grid.Column="2"
+                                Style="{StaticResource Button.Ghost}"
+                                Margin="8,0,0,0"
+                                VerticalAlignment="Center"
+                                Command="{Binding ClearSelectionCommand}"
+                                Content="{loc:Loc Common.ClearSelection}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Necessidade de elevacao -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,12,0,0"
+                    Background="{DynamicResource Brush.Warning.Soft}"
+                    BorderBrush="{DynamicResource Brush.Warning}"
+                    Visibility="{Binding ShowElevationNote, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Shield}"
+                          Stretch="Uniform" Width="15" Height="15"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Warning.Text}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding ElevationNote}"
+                               Style="{StaticResource Text.Caption}"
+                               Foreground="{DynamicResource Brush.Warning.Text}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ LOCAIS ENCONTRADOS ============ -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,12,0,0"
+                    Visibility="{Binding HasTargets, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="{loc:Loc Cleanup.Items.Title}" Style="{StaticResource Text.Section}" />
+                    <TextBlock Text="{loc:Loc Cleanup.Items.Subtitle}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,0" />
+
+                    <ItemsControl ItemsSource="{Binding Targets}" Margin="0,12,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card.Inset}" Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <CheckBox Grid.Column="0"
+                                                  Margin="0,2,12,0"
+                                                  VerticalAlignment="Top"
+                                                  IsChecked="{Binding IsSelected}"
+                                                  IsEnabled="{Binding IsAvailable}" />
+
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Value}" />
+                                            <TextBlock Text="{Binding Description}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,4,0,0" />
+
+                                            <WrapPanel Margin="0,8,0,0">
+                                                <Border Style="{StaticResource Badge}" Margin="0,0,6,6">
+                                                    <TextBlock Text="{Binding SizeText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge}" Margin="0,0,6,6">
+                                                    <TextBlock Text="{Binding FilesText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+
+                                                <Border Margin="0,0,6,6">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border" BasedOn="{StaticResource Badge}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Risk}" Value="Medium">
+                                                                    <Setter Property="Background" Value="{DynamicResource Brush.Warning.Soft}" />
+                                                                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Warning}" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Risk}" Value="High">
+                                                                    <Setter Property="Background" Value="{DynamicResource Brush.Danger.Soft}" />
+                                                                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Danger}" />
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Risk}" Value="Critical">
+                                                                    <Setter Property="Background" Value="{DynamicResource Brush.Danger.Soft}" />
+                                                                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Danger}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <TextBlock Text="{Binding RiskText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+
+                                                <Border Style="{StaticResource Badge.Warning}"
+                                                        Margin="0,0,6,6"
+                                                        Visibility="{Binding RequiresElevation, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{loc:Loc Diagnose.Check.NeedsElevation}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge.Info}"
+                                                        Margin="0,0,6,6"
+                                                        Visibility="{Binding RequiresConfirmation, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{loc:Loc Cleanup.Item.Confirm}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge.Danger}"
+                                                        Margin="0,0,6,6"
+                                                        Visibility="{Binding HasUnavailableReason, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{Binding UnavailableReason}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                            </WrapPanel>
+
+                                            <TextBlock Text="{Binding PathsText}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       Opacity="0.75"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,6,0,0" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ NADA ENCONTRADO ============ -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,12,0,0"
+                    Visibility="{Binding HasTargets, Converter={StaticResource BoolToVisibility.Invert}}">
+                <StackPanel>
+                    <TextBlock Text="{loc:Loc Cleanup.List.Empty}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap" />
+                    <Button Style="{StaticResource Button.Ghost}"
+                            HorizontalAlignment="Left"
+                            Margin="0,10,0,0"
+                            Command="{Binding OpenStorageCommand}"
+                            Content="{loc:Loc Nav.Storage}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ LIXEIRA ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                        <TextBlock Text="{Binding RecycleBinTitle}" Style="{StaticResource Text.Section}" />
+                        <TextBlock Text="{Binding RecycleBinSubtitle}"
+                                   Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,4,0,0" />
+                        <TextBlock Text="{Binding RecycleBinText}"
+                                   Style="{StaticResource Text.Label}"
+                                   Margin="0,8,0,0"
+                                   Visibility="{Binding HasRecycleBinInfo, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Text="{loc:Loc Cleanup.RecycleBin.Empty}"
+                                   Style="{StaticResource Text.Caption}"
+                                   Margin="0,8,0,0"
+                                   Visibility="{Binding HasRecycleBinInfo, Converter={StaticResource BoolToVisibility.Invert}}" />
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            Style="{StaticResource Button.Ghost}"
+                            VerticalAlignment="Center"
+                            Command="{Binding EmptyRecycleBinCommand}"
+                            IsEnabled="{Binding IsRecycleBinBusy, Converter={StaticResource InverseBool}}"
+                            Content="{Binding EmptyRecycleBinAction}" />
+                </Grid>
+            </Border>
+
+            <!-- ============ RESULTADO ============ -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,12,0,0"
+                    Visibility="{Binding HasResults, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Text="{loc:Loc Cleanup.Result.Title}" Style="{StaticResource Text.Section}" />
+                        <Border Style="{StaticResource Badge.Warning}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                Visibility="{Binding WasCancelled, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{loc:Loc Cleanup.Status.Cancelled}" Style="{StaticResource Badge.Text}" />
+                        </Border>
+                    </Grid>
+
+                    <TextBlock Text="{Binding SummaryText}" Style="{StaticResource Text.Value}" Margin="0,8,0,0" />
+                    <TextBlock Text="{Binding SummaryDetailText}" Style="{StaticResource Text.Caption}" Margin="0,4,0,0" />
+
+                    <ItemsControl ItemsSource="{Binding Results}" Margin="0,12,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card.Inset}" Margin="0,0,0,8">
+                                    <StackPanel>
+                                        <Grid>
+                                            <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Label}" />
+                                            <Border HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                <Border.Style>
+                                                    <Style TargetType="Border" BasedOn="{StaticResource Badge.Success}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Succeeded}" Value="False">
+                                                                <Setter Property="Background" Value="{DynamicResource Brush.Warning.Soft}" />
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Warning}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock Text="{Binding StatusText}" Style="{StaticResource Badge.Text}" />
+                                            </Border>
+                                        </Grid>
+
+                                        <WrapPanel Margin="0,8,0,0">
+                                            <Border Style="{StaticResource Badge}" Margin="0,0,6,0">
+                                                <TextBlock Text="{Binding DeletedText}" Style="{StaticResource Badge.Text}" />
+                                            </Border>
+                                            <Border Style="{StaticResource Badge}" Margin="0,0,6,0">
+                                                <TextBlock Text="{Binding FilesText}" Style="{StaticResource Badge.Text}" />
+                                            </Border>
+                                            <Border Style="{StaticResource Badge}">
+                                                <TextBlock Text="{Binding DurationText}" Style="{StaticResource Badge.Text}" />
+                                            </Border>
+                                        </WrapPanel>
+
+                                        <TextBlock Text="{Binding Message}"
+                                                   Style="{StaticResource Text.Caption}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,8,0,0"
+                                                   Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Button Style="{StaticResource Button.Ghost}"
+                            HorizontalAlignment="Left"
+                            Margin="0,4,0,0"
+                            Command="{Binding OpenHistoryCommand}"
+                            Content="{loc:Loc Cleanup.Result.OpenHistory}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ SEGURANCA ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource Icon.Shield}"
+                              Stretch="Uniform" Width="15" Height="15"
+                              VerticalAlignment="Center"
+                              Stroke="{DynamicResource Brush.Success}"
+                              StrokeThickness="1.7"
+                              StrokeLineJoin="Round" />
+                        <TextBlock Text="{loc:Loc Cleanup.Safety.Title}"
+                                   Style="{StaticResource Text.Section}"
+                                   Margin="9,0,0,0" />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding SafetyNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0" />
+                    <TextBlock Text="{Binding RestoreNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,6,0,0" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>OptimizerPC.Services</RootNamespace>
+    <AssemblyName>OptimizerPC.Services</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OptimizerPC.Core\OptimizerPC.Core.csproj" />
+  </ItemGroup>
+
+  <!-- WithCulture=false mantem os catalogos na montagem principal: o SDK, ao ver
+       "loc.pt-BR.json", infere uma cultura pelo nome do arquivo e mandaria o recurso
+       para uma montagem satelite, onde o localizador nao o encontra. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Localization\**\*.json" WithCulture="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OptimizerPC.Tests" />
+  </ItemGroup>
+
+</Project>

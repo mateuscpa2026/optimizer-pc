@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>OptimizerPC.App</RootNamespace>
+    <AssemblyName>OptimizerPC</AssemblyName>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\OptimizerPC.ico</ApplicationIcon>
+    <StartupObject>OptimizerPC.App.App</StartupObject>
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+    <PublishSingleFile>false</PublishSingleFile>
+  </PropertyGroup>
+
+  <!-- A percepcao de DPI vem do app.manifest e vale para o WPF. O WinForms existe
+       apenas para o icone da bandeja e nao gerencia essa configuracao. -->
+  <PropertyGroup>
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+  </PropertyGroup>
+
+  <!-- O projeto usa WinForms apenas para o icone da bandeja, com aliases
+       explicitos. Os usings implicitos de WinForms/Drawing entrariam em
+       conflito com os tipos de mesmo nome do WPF (Application, Brush, Point,
+       Screen, Icon, Size), por isso sao removidos. -->
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OptimizerPC.Core\OptimizerPC.Core.csproj" />
+    <ProjectReference Include="..\OptimizerPC.Services\OptimizerPC.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml" SubType="Designer" Generator="MSBuild:Compile" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- WithCulture=false evita que "loc.pt-BR.json" vire uma montagem satelite
+         por inferencia de cultura a partir do nome do arquivo. -->
+    <None Remove="Localization\*.json" />
+    <EmbeddedResource Include="Localization\*.json" WithCulture="false" />
+    <Resource Include="Assets\**\*.*" />
+  </ItemGroup>
+
+</Project>

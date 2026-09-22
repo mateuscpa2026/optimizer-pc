@@ -1,0 +1,308 @@
+<UserControl x:Class="OptimizerPC.App.Views.ToolsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:OptimizerPC.App.Localization"
+             xmlns:vm="clr-namespace:OptimizerPC.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:ToolsViewModel}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+        <StackPanel>
+
+            <!-- Aviso de erro -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Background="{DynamicResource Brush.Danger.Soft}"
+                    BorderBrush="{DynamicResource Brush.Danger}"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Warning}"
+                          Stretch="Uniform" Width="16" Height="16"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Danger.Text}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               Style="{StaticResource Text.Body}"
+                               Foreground="{DynamicResource Brush.Danger.Text}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Operacao em andamento -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Text="{Binding BusyText}" Style="{StaticResource Text.Label}" />
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                Padding="10,4"
+                                MinHeight="26"
+                                Command="{Binding CancelCommand}"
+                                Content="{loc:Loc Common.Cancel}" />
+                    </Grid>
+                    <ProgressBar Style="{StaticResource ProgressBar.Thin}"
+                                 Margin="0,10,0,0"
+                                 Maximum="100"
+                                 Value="{Binding ProgressPercent, Mode=OneWay}"
+                                 IsIndeterminate="{Binding IsProgressIndeterminate}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Elevacao pendente -->
+            <Border Style="{StaticResource Card.Inset}"
+                    Margin="0,0,0,12"
+                    Background="{DynamicResource Brush.Warning.Soft}"
+                    BorderBrush="{DynamicResource Brush.Warning}"
+                    Visibility="{Binding ShowElevationNote, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Shield}"
+                          Stretch="Uniform" Width="15" Height="15"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Warning.Text}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <StackPanel Margin="10,0,0,0">
+                        <TextBlock Text="{Binding ElevationNote}"
+                                   Style="{StaticResource Text.Caption}"
+                                   Foreground="{DynamicResource Brush.Warning.Text}"
+                                   TextWrapping="Wrap" />
+                        <Button Style="{StaticResource Button.Ghost}"
+                                Margin="0,8,0,0"
+                                Padding="10,4"
+                                MinHeight="26"
+                                HorizontalAlignment="Left"
+                                Command="{Binding RestartElevatedCommand}"
+                                Content="{Binding RestartElevatedText}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ FERRAMENTAS ============ -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Text="{Binding OptionsTitle}" Style="{StaticResource Text.Section}" />
+                            <TextBlock Text="{Binding Subtitle}"
+                                       Style="{StaticResource Text.Caption}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Command="{Binding RefreshCommand}"
+                                Content="{loc:Loc Common.Refresh}" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding StatusText}"
+                               Style="{StaticResource Text.Label}"
+                               Foreground="{DynamicResource Brush.Accent}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}" />
+
+                    <ListBox ItemsSource="{Binding Tools}"
+                             SelectedItem="{Binding SelectedTool}"
+                             Margin="0,12,0,0"
+                             MaxHeight="360"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card.Inset}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Title}"
+                                                       Style="{StaticResource Text.Value}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding Description}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,3,0,0" />
+
+                                            <WrapPanel Margin="0,7,0,0">
+                                                <Border Style="{StaticResource Badge.Accent}"
+                                                        Margin="0,0,6,0"
+                                                        Visibility="{Binding IsAdvanced, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{Binding AdvancedText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge.Warning}"
+                                                        Visibility="{Binding RequiresElevation, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{Binding ElevationText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                            </WrapPanel>
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Command}"
+                                                   Style="{StaticResource Text.Mono}"
+                                                   VerticalAlignment="Top" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <TextBlock Text="{Binding OptionsEmptyText}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasTools, Converter={StaticResource BoolToVisibility.Invert}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ DETALHES ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="{Binding DetailsTitle}" Style="{StaticResource Text.Section}" />
+
+                    <TextBlock Text="{Binding DetailsEmptyText}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding HasSelection, Converter={StaticResource BoolToVisibility.Invert}}" />
+
+                    <StackPanel Visibility="{Binding HasSelection, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{Binding SelectedTool.Title}"
+                                   Style="{StaticResource Text.Value}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,10,0,0" />
+                        <TextBlock Text="{Binding SelectedTool.Description}"
+                                   Style="{StaticResource Text.Body}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,6,0,0" />
+
+                        <TextBlock Text="{Binding SelectedTool.Note}"
+                                   Style="{StaticResource Text.Caption}"
+                                   Foreground="{DynamicResource Brush.Accent}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,8,0,0"
+                                   Visibility="{Binding SelectedTool.HasNote, Converter={StaticResource BoolToVisibility}}" />
+
+                        <TextBlock Text="{Binding ArgumentsNote}"
+                                   Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,12,0,0" />
+
+                        <Border Style="{StaticResource Card.Inset}"
+                                Margin="0,8,0,0"
+                                Background="{DynamicResource Brush.Inset}">
+                            <TextBlock Text="{Binding SelectedTool.ArgumentsText}"
+                                       Style="{StaticResource Text.Mono}"
+                                       TextWrapping="Wrap" />
+                        </Border>
+
+                        <TextBlock Text="{Binding ElevationHint}"
+                                   Style="{StaticResource Text.Caption}"
+                                   Foreground="{DynamicResource Brush.Warning.Text}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,10,0,0"
+                                   Visibility="{Binding HasElevationHint, Converter={StaticResource BoolToVisibility}}" />
+
+                        <Button Style="{StaticResource Button.Primary}"
+                                HorizontalAlignment="Left"
+                                Margin="0,14,0,0"
+                                Command="{Binding RunCommand}"
+                                IsEnabled="{Binding CanRun}"
+                                Content="{loc:Loc Tools.Run.Button}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ SAIDA ============ -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,12,0,0"
+                    Visibility="{Binding HasOutput, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Text="{Binding OutputTitle}" Style="{StaticResource Text.Section}" />
+
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top">
+                            <Button Style="{StaticResource Button.Ghost}"
+                                    Margin="0,0,8,0"
+                                    Command="{Binding CopyOutputCommand}"
+                                    Content="{loc:Loc Tools.Output.Copy}" />
+                            <Button Style="{StaticResource Button.Ghost}"
+                                    Command="{Binding ClearOutputCommand}"
+                                    Content="{loc:Loc Tools.Output.Clear}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Style="{StaticResource Card.Inset}"
+                            Margin="0,12,0,0"
+                            Background="{DynamicResource Brush.Inset}">
+                        <ScrollViewer MaxHeight="320"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Output}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}"
+                                                   Style="{StaticResource Text.Mono}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,2" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+
+                    <TextBlock Text="{Binding ResultText}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Label}">
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ResultSeverity}" Value="Warning">
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Warning.Text}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding ResultSeverity}" Value="Critical">
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Danger.Text}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="{Binding OutputEmptyText}"
+                       Style="{StaticResource Text.Caption}"
+                       TextWrapping="Wrap"
+                       Margin="0,12,0,0"
+                       Visibility="{Binding HasOutput, Converter={StaticResource BoolToVisibility.Invert}}" />
+
+            <!-- Aviso legal -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Info}"
+                          Stretch="Uniform" Width="15" Height="15"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Accent}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding Disclaimer}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

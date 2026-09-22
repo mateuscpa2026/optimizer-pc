@@ -1,0 +1,415 @@
+<UserControl x:Class="OptimizerPC.App.Views.GamerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:OptimizerPC.App.Localization"
+             xmlns:vm="clr-namespace:OptimizerPC.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:GamerViewModel}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+        <StackPanel>
+
+            <!-- Aviso de erro -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Background="{DynamicResource Brush.Danger.Soft}"
+                    BorderBrush="{DynamicResource Brush.Danger}"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Warning}"
+                          Stretch="Uniform" Width="16" Height="16"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Danger.Text}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               Style="{StaticResource Text.Body}"
+                               Foreground="{DynamicResource Brush.Danger.Text}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Operacao em andamento -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Text="{Binding BusyText}" Style="{StaticResource Text.Label}" />
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                Padding="10,4"
+                                MinHeight="26"
+                                Command="{Binding CancelCommand}"
+                                Content="{loc:Loc Common.Cancel}" />
+                    </Grid>
+                    <ProgressBar Style="{StaticResource ProgressBar.Thin}"
+                                 Margin="0,10,0,0"
+                                 Maximum="100"
+                                 Value="{Binding ProgressPercent, Mode=OneWay}"
+                                 IsIndeterminate="{Binding IsProgressIndeterminate}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ SESSAO ============ -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Text="{loc:Loc Gamer.Title}" Style="{StaticResource Text.Section}" />
+                            <TextBlock Text="{loc:Loc Gamer.Subtitle}"
+                                       Style="{StaticResource Text.Caption}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Command="{Binding RefreshCommand}"
+                                IsEnabled="{Binding IsIdle}"
+                                Content="{loc:Loc Common.Refresh}" />
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                        <Border Style="{StaticResource Badge.Success}"
+                                Margin="0,0,8,0"
+                                Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{Binding SessionStateText}" Style="{StaticResource Badge.Text}" />
+                        </Border>
+                        <Border Style="{StaticResource Badge}"
+                                Margin="0,0,8,0"
+                                Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibility.Invert}}">
+                            <TextBlock Text="{Binding SessionStateText}" Style="{StaticResource Badge.Text}" />
+                        </Border>
+                        <Border Style="{StaticResource Badge.Accent}"
+                                Visibility="{Binding HasSession, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Text="{Binding SessionSummary}" Style="{StaticResource Badge.Text}" />
+                        </Border>
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding ActiveGameName}"
+                               Style="{StaticResource Text.Value}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasSession, Converter={StaticResource BoolToVisibility}}" />
+
+                    <TextBlock Text="{Binding StartedAtText}"
+                               Style="{StaticResource Text.Caption}"
+                               Margin="0,4,0,0"
+                               Visibility="{Binding HasSession, Converter={StaticResource BoolToVisibility}}" />
+
+                    <TextBlock Text="{Binding StatusText}"
+                               Style="{StaticResource Text.Label}"
+                               Foreground="{DynamicResource Brush.Accent}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}" />
+
+                    <TextBlock Text="{loc:Loc Gamer.Session.Idle}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasSession, Converter={StaticResource BoolToVisibility.Invert}}" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                        <Button Margin="0,0,8,0"
+                                Command="{Binding StartCommand}"
+                                IsEnabled="{Binding CanStart}"
+                                Content="{loc:Loc Gamer.Start.Action}" />
+                        <Button Style="{StaticResource Button.Ghost}"
+                                Margin="0,0,8,0"
+                                Command="{Binding StopRestoreCommand}"
+                                IsEnabled="{Binding CanStop}"
+                                Content="{loc:Loc Gamer.Stop.Restore.Action}" />
+                        <Button Style="{StaticResource Button.Ghost}"
+                                Command="{Binding StopKeepCommand}"
+                                IsEnabled="{Binding CanStop}"
+                                Content="{loc:Loc Gamer.Stop.Keep.Action}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ OPCOES ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="{Binding OptionsTitle}" Style="{StaticResource Text.Section}" />
+                    <TextBlock Text="{Binding OptionsNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,0" />
+
+                    <StackPanel Margin="0,12,0,0">
+                        <CheckBox IsChecked="{Binding EnableGameMode}"
+                                  IsEnabled="{Binding CanStop, Converter={StaticResource InverseBool}}"
+                                  Content="{loc:Loc Gamer.Option.GameMode}" />
+                        <CheckBox IsChecked="{Binding SetHighPerformancePowerPlan}"
+                                  IsEnabled="{Binding CanStop, Converter={StaticResource InverseBool}}"
+                                  Margin="0,10,0,0"
+                                  Content="{loc:Loc Gamer.Option.PowerPlan}" />
+                        <CheckBox IsChecked="{Binding PauseNotifications}"
+                                  IsEnabled="{Binding CanStop, Converter={StaticResource InverseBool}}"
+                                  Margin="0,10,0,0"
+                                  Content="{loc:Loc Gamer.Option.Notifications}" />
+                        <CheckBox IsChecked="{Binding DisableVisualEffects}"
+                                  IsEnabled="{Binding CanStop, Converter={StaticResource InverseBool}}"
+                                  Margin="0,10,0,0"
+                                  Content="{loc:Loc Gamer.Option.VisualEffects}" />
+                        <CheckBox IsChecked="{Binding ReduceBackgroundPriority}"
+                                  IsEnabled="{Binding CanStop, Converter={StaticResource InverseBool}}"
+                                  Margin="0,10,0,0"
+                                  Content="{loc:Loc Gamer.Option.Priority}" />
+                        <CheckBox IsChecked="{Binding StopTemporaryServices}"
+                                  IsEnabled="{Binding CanStop, Converter={StaticResource InverseBool}}"
+                                  Margin="0,10,0,0"
+                                  Content="{loc:Loc Gamer.Option.Services}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Elevacao pendente -->
+            <Border Style="{StaticResource Card.Inset}"
+                    Margin="0,12,0,0"
+                    Background="{DynamicResource Brush.Warning.Soft}"
+                    BorderBrush="{DynamicResource Brush.Warning}"
+                    Visibility="{Binding ShowElevationNote, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Shield}"
+                          Stretch="Uniform" Width="15" Height="15"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Warning.Text}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding ElevationNote}"
+                               Style="{StaticResource Text.Caption}"
+                               Foreground="{DynamicResource Brush.Warning.Text}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ JOGOS INSTALADOS ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="{Binding GamesTitle}" Style="{StaticResource Text.Section}" />
+                    <TextBlock Text="{Binding GamesHint}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,0" />
+
+                    <ListBox ItemsSource="{Binding Games}"
+                             SelectedItem="{Binding SelectedGame}"
+                             Margin="0,12,0,0"
+                             MaxHeight="300"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             Visibility="{Binding HasGames, Converter={StaticResource BoolToVisibility}}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card.Inset}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Name}"
+                                                       Style="{StaticResource Text.Value}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding InstallPath}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Margin="0,3,0,0"
+                                                       Visibility="{Binding HasInstallPath, Converter={StaticResource BoolToVisibility}}" />
+
+                                            <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
+                                                <Border Style="{StaticResource Badge.Info}" Margin="0,0,6,0">
+                                                    <TextBlock Text="{Binding LauncherText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge.Accent}"
+                                                        Visibility="{Binding HasSize, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{Binding SizeText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding SizeText}"
+                                                   Style="{StaticResource Text.Caption}"
+                                                   VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <TextBlock Text="{Binding GamesEmptyText}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasGames, Converter={StaticResource BoolToVisibility.Invert}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ JOGOS EM EXECUCAO ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="{Binding RunningTitle}" Style="{StaticResource Text.Section}" />
+                    <TextBlock Text="{Binding RunningHint}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,0" />
+
+                    <ListBox ItemsSource="{Binding RunningGames}"
+                             SelectedItem="{Binding SelectedProcess}"
+                             Margin="0,12,0,0"
+                             MaxHeight="300"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             Visibility="{Binding HasRunningGames, Converter={StaticResource BoolToVisibility}}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card.Inset}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Name}"
+                                                       Style="{StaticResource Text.Value}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       ToolTip="{Binding FilePath}" />
+                                            <TextBlock Text="{Binding Description}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Margin="0,3,0,0" />
+
+                                            <WrapPanel Margin="0,7,0,0">
+                                                <Border Style="{StaticResource Badge.Danger}"
+                                                        Margin="0,0,6,0"
+                                                        Visibility="{Binding IsSystemCritical, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{loc:Loc Process.Item.Critical}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge.Info}"
+                                                        Margin="0,0,6,0"
+                                                        Visibility="{Binding IsElevatedProcess, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{loc:Loc Process.Item.Elevated}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge}">
+                                                    <TextBlock Style="{StaticResource Badge.Text}">
+                                                        <Run Text="{loc:Loc Process.Item.Threads}" /><Run Text=" " /><Run Text="{Binding ThreadCount, Mode=OneWay}" />
+                                                        <Run Text="  ·  " />
+                                                        <Run Text="{loc:Loc Process.Item.Handles}" /><Run Text=" " /><Run Text="{Binding HandleCount, Mode=OneWay}" />
+                                                    </TextBlock>
+                                                </Border>
+                                            </WrapPanel>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" MinWidth="120">
+                                            <TextBlock Text="{Binding MemoryText}"
+                                                       Style="{StaticResource Text.Value}"
+                                                       HorizontalAlignment="Right" />
+                                            <TextBlock Text="{Binding CpuText}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       HorizontalAlignment="Right"
+                                                       Margin="0,3,0,0" />
+                                            <TextBlock Text="{Binding StartedText}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       HorizontalAlignment="Right"
+                                                       Opacity="0.75"
+                                                       Margin="0,3,0,0" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <TextBlock Text="{Binding RunningEmptyText}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasRunningGames, Converter={StaticResource BoolToVisibility.Invert}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ RESULTADO ============ -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,12,0,0"
+                    Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding ResultsTitle}" Style="{StaticResource Text.Section}" />
+                    <TextBlock Text="{Binding ResultText}"
+                               Style="{StaticResource Text.Subtitle}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0" />
+                    <TextBlock Text="{Binding ResultDetail}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,6,0,0" />
+
+                    <ItemsControl ItemsSource="{Binding SessionResults}" Margin="0,12,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card.Inset}" Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{Binding Label}"
+                                                   Style="{StaticResource Text.Body}"
+                                                   VerticalAlignment="Top"
+                                                   Margin="0,0,12,0" />
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Value}"
+                                                   Style="{StaticResource Text.Caption}"
+                                                   TextWrapping="Wrap"
+                                                   Visibility="{Binding HasValue, Converter={StaticResource BoolToVisibility}}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{Binding ResultsEmptyText}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,6,0,0"
+                               Visibility="{Binding HasResult, Converter={StaticResource BoolToVisibility.Invert}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Aviso legal e restauracao -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource Icon.Info}"
+                              Stretch="Uniform" Width="15" Height="15"
+                              VerticalAlignment="Top"
+                              Stroke="{DynamicResource Brush.Accent}"
+                              StrokeThickness="1.7"
+                              StrokeLineJoin="Round" />
+                        <TextBlock Text="{Binding Disclaimer}"
+                                   Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap"
+                                   Margin="10,0,0,0" />
+                    </StackPanel>
+
+                    <Button Style="{StaticResource Button.Ghost}"
+                            HorizontalAlignment="Left"
+                            Margin="0,12,0,0"
+                            Command="{Binding OpenRestoreCommand}"
+                            Content="{loc:Loc Gamer.Restore.Action}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

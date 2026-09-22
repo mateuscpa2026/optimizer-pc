@@ -1,0 +1,341 @@
+<UserControl x:Class="OptimizerPC.App.Views.ReportsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:OptimizerPC.App.Localization"
+             xmlns:vm="clr-namespace:OptimizerPC.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:ReportsViewModel}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+        <StackPanel>
+
+            <!-- Aviso de erro -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Background="{DynamicResource Brush.Danger.Soft}"
+                    BorderBrush="{DynamicResource Brush.Danger}"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Warning}"
+                          Stretch="Uniform" Width="16" Height="16"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Danger.Text}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               Style="{StaticResource Text.Body}"
+                               Foreground="{DynamicResource Brush.Danger.Text}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Operacao em andamento -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Text="{Binding BusyText}" Style="{StaticResource Text.Label}" />
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                Padding="10,4"
+                                MinHeight="26"
+                                Command="{Binding CancelCommand}"
+                                Content="{loc:Loc Common.Cancel}" />
+                    </Grid>
+                    <ProgressBar Style="{StaticResource ProgressBar.Thin}"
+                                 Margin="0,10,0,0"
+                                 Maximum="100"
+                                 Value="{Binding ProgressPercent, Mode=OneWay}"
+                                 IsIndeterminate="{Binding IsProgressIndeterminate}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ GERAR RELATORIO ============ -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="{Binding GenerateTitle}" Style="{StaticResource Text.Section}" />
+                    <TextBlock Text="{Binding Subtitle}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,0" />
+
+                    <TextBlock Text="{Binding StatusText}"
+                               Style="{StaticResource Text.Label}"
+                               Foreground="{DynamicResource Brush.Accent}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}" />
+
+                    <Grid Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                            <TextBlock Text="{Binding FormatLabel}" Style="{StaticResource Text.Label}" />
+                            <ComboBox ItemsSource="{Binding Formats}"
+                                      SelectedItem="{Binding SelectedFormat}"
+                                      DisplayMemberPath="Title"
+                                      Margin="0,6,0,0" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                            <TextBlock Text="{Binding TitleLabel}" Style="{StaticResource Text.Label}" />
+                            <Grid Margin="0,6,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBox Grid.Column="0"
+                                         Text="{Binding ReportTitle, UpdateSourceTrigger=PropertyChanged}" />
+
+                                <Button Grid.Column="1"
+                                        Style="{StaticResource Button.Ghost}"
+                                        Margin="8,0,0,0"
+                                        Command="{Binding UseDefaultTitleCommand}"
+                                        Content="{loc:Loc Report.Title.Default}" />
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Text="{Binding TitleNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0" />
+
+                    <TextBlock Text="{Binding SectionsLabel}"
+                               Style="{StaticResource Text.Label}"
+                               Margin="0,16,0,0" />
+
+                    <WrapPanel Margin="0,8,0,0">
+                        <CheckBox Content="{Binding SectionSystemInfoText}"
+                                  IsChecked="{Binding IncludeSystemInfo}"
+                                  Margin="0,0,18,8" />
+                        <CheckBox Content="{Binding SectionDiagnosisText}"
+                                  IsChecked="{Binding IncludeDiagnosis}"
+                                  Margin="0,0,18,8" />
+                        <CheckBox Content="{Binding SectionRecommendationsText}"
+                                  IsChecked="{Binding IncludeRecommendations}"
+                                  Margin="0,0,18,8" />
+                        <CheckBox Content="{Binding SectionHistoryText}"
+                                  IsChecked="{Binding IncludeHistory}"
+                                  Margin="0,0,18,8" />
+                        <CheckBox Content="{Binding SectionCleanupText}"
+                                  IsChecked="{Binding IncludeCleanupSummary}"
+                                  Margin="0,0,0,8" />
+                    </WrapPanel>
+
+                    <TextBlock Text="{Binding FolderLabel}"
+                               Style="{StaticResource Text.Label}"
+                               Margin="0,10,0,0" />
+
+                    <Border Style="{StaticResource Card.Inset}" Margin="0,6,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding OutputFolder}"
+                                       Style="{StaticResource Text.Mono}"
+                                       TextWrapping="Wrap"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,12,0" />
+
+                            <Button Grid.Column="1"
+                                    Style="{StaticResource Button.Ghost}"
+                                    Padding="10,4"
+                                    MinHeight="26"
+                                    Command="{Binding CopyPathCommand}"
+                                    CommandParameter="{Binding OutputFolder}"
+                                    Content="{Binding CopyPathText}" />
+                        </Grid>
+                    </Border>
+
+                    <TextBlock Text="{Binding FolderNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,6,0,0" />
+
+                    <Button Style="{StaticResource Button.Primary}"
+                            HorizontalAlignment="Left"
+                            Margin="0,16,0,0"
+                            Command="{Binding GenerateCommand}"
+                            IsEnabled="{Binding CanGenerate}"
+                            Content="{Binding GenerateText}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ RELATORIOS GERADOS ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Text="{Binding RecentTitle}" Style="{StaticResource Text.Section}" />
+                            <TextBlock Text="{Binding RecentHint}"
+                                       Style="{StaticResource Text.Caption}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Command="{Binding RefreshCommand}"
+                                Content="{loc:Loc Common.Refresh}" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding ReportsSummary}"
+                               Style="{StaticResource Text.Caption}"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding HasReports, Converter={StaticResource BoolToVisibility}}" />
+
+                    <ListBox ItemsSource="{Binding Reports}"
+                             SelectedItem="{Binding SelectedReport}"
+                             Margin="0,12,0,0"
+                             MaxHeight="320"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card.Inset}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Title}"
+                                                       Style="{StaticResource Text.Value}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding FileName}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Margin="0,3,0,0" />
+
+                                            <WrapPanel Margin="0,7,0,0">
+                                                <Border Style="{StaticResource Badge.Info}" Margin="0,0,6,0">
+                                                    <TextBlock Text="{Binding FormatText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge}">
+                                                    <TextBlock Text="{Binding SizeText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                            </WrapPanel>
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding CreatedText}"
+                                                   Style="{StaticResource Text.Caption}"
+                                                   VerticalAlignment="Top" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <TextBlock Text="{Binding RecentEmptyText}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding HasReports, Converter={StaticResource BoolToVisibility.Invert}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ DETALHES ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Text="{Binding DetailsTitle}" Style="{StaticResource Text.Section}" />
+
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Command="{Binding DeselectReportCommand}"
+                                Content="{loc:Loc Report.Details.Close}"
+                                Visibility="{Binding HasSelectedReport, Converter={StaticResource BoolToVisibility}}" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding DetailsEmptyText}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding HasSelectedReport, Converter={StaticResource BoolToVisibility.Invert}}" />
+
+                    <StackPanel Visibility="{Binding HasSelectedReport, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{Binding SelectedReport.Title}"
+                                   Style="{StaticResource Text.Value}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,10,0,0" />
+
+                        <WrapPanel Margin="0,8,0,0">
+                            <Border Style="{StaticResource Badge.Info}" Margin="0,0,6,0">
+                                <TextBlock Text="{Binding SelectedReport.FormatText}" Style="{StaticResource Badge.Text}" />
+                            </Border>
+                            <Border Style="{StaticResource Badge}" Margin="0,0,6,0">
+                                <TextBlock Text="{Binding SelectedReport.SizeText}" Style="{StaticResource Badge.Text}" />
+                            </Border>
+                            <Border Style="{StaticResource Badge}">
+                                <TextBlock Text="{Binding SelectedReport.CreatedText}" Style="{StaticResource Badge.Text}" />
+                            </Border>
+                        </WrapPanel>
+
+                        <TextBlock Text="{Binding SelectedReport.Summary}"
+                                   Style="{StaticResource Text.Body}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,10,0,0"
+                                   Visibility="{Binding SelectedReport.HasSummary, Converter={StaticResource BoolToVisibility}}" />
+
+                        <TextBlock Text="{loc:Loc Report.Details.Path}" Style="{StaticResource Text.Label}" Margin="0,12,0,0" />
+
+                        <Border Style="{StaticResource Card.Inset}" Margin="0,6,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding SelectedReport.FilePath}"
+                                           Style="{StaticResource Text.Mono}"
+                                           TextWrapping="Wrap"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,12,0" />
+
+                                <Button Grid.Column="1"
+                                        Style="{StaticResource Button.Ghost}"
+                                        Padding="10,4"
+                                        MinHeight="26"
+                                        Command="{Binding CopyPathCommand}"
+                                        CommandParameter="{Binding SelectedReport.FilePath}"
+                                        Content="{Binding CopyPathText}" />
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Aviso legal -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Info}"
+                          Stretch="Uniform" Width="15" Height="15"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Accent}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding Disclaimer}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

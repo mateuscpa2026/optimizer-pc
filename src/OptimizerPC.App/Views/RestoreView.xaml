@@ -1,0 +1,358 @@
+<UserControl x:Class="OptimizerPC.App.Views.RestoreView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:OptimizerPC.App.Localization"
+             xmlns:vm="clr-namespace:OptimizerPC.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:RestoreViewModel}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+        <StackPanel>
+
+            <!-- Aviso de erro -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Background="{DynamicResource Brush.Danger.Soft}"
+                    BorderBrush="{DynamicResource Brush.Danger}"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Warning}"
+                          Stretch="Uniform" Width="16" Height="16"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Danger.Text}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               Style="{StaticResource Text.Body}"
+                               Foreground="{DynamicResource Brush.Danger.Text}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Operacao em andamento -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Text="{Binding BusyText}" Style="{StaticResource Text.Label}" />
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                Padding="10,4"
+                                MinHeight="26"
+                                Command="{Binding CancelCommand}"
+                                Content="{loc:Loc Common.Cancel}" />
+                    </Grid>
+                    <ProgressBar Style="{StaticResource ProgressBar.Thin}"
+                                 Margin="0,10,0,0"
+                                 Maximum="100"
+                                 Value="{Binding ProgressPercent, Mode=OneWay}"
+                                 IsIndeterminate="{Binding IsProgressIndeterminate}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Elevacao pendente -->
+            <Border Style="{StaticResource Card.Inset}"
+                    Margin="0,0,0,12"
+                    Background="{DynamicResource Brush.Warning.Soft}"
+                    BorderBrush="{DynamicResource Brush.Warning}"
+                    Visibility="{Binding ShowElevationNote, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Shield}"
+                          Stretch="Uniform" Width="15" Height="15"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Warning.Text}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <StackPanel Margin="10,0,0,0">
+                        <TextBlock Text="{Binding ElevationNote}"
+                                   Style="{StaticResource Text.Caption}"
+                                   Foreground="{DynamicResource Brush.Warning.Text}"
+                                   TextWrapping="Wrap" />
+                        <Button Style="{StaticResource Button.Ghost}"
+                                Margin="0,8,0,0"
+                                Padding="10,4"
+                                MinHeight="26"
+                                HorizontalAlignment="Left"
+                                Command="{Binding RestartElevatedCommand}"
+                                Content="{loc:Loc Restore.Elevation.Restart}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ PONTOS DE RESTAURACAO DO WINDOWS ============ -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Text="{Binding PointsTitle}" Style="{StaticResource Text.Section}" />
+                            <TextBlock Text="{Binding Subtitle}"
+                                       Style="{StaticResource Text.Caption}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Command="{Binding RefreshCommand}"
+                                Content="{loc:Loc Common.Refresh}" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding StatusText}"
+                               Style="{StaticResource Text.Label}"
+                               Foreground="{DynamicResource Brush.Accent}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}" />
+
+                    <Border Style="{StaticResource Card.Inset}" Margin="0,12,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                <TextBlock Text="{loc:Loc Restore.Protection.Title}"
+                                           Style="{StaticResource Text.Value}" />
+                                <TextBlock Text="{Binding ProtectionStatusText}"
+                                           Style="{StaticResource Text.Body}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,6,0,0" />
+
+                                <WrapPanel Margin="0,8,0,0">
+                                    <Border Style="{StaticResource Badge.Success}"
+                                            Margin="0,0,6,0"
+                                            Visibility="{Binding IsProtectionEnabled, Converter={StaticResource BoolToVisibility}}">
+                                        <TextBlock Text="{loc:Loc Restore.Protection.On}" Style="{StaticResource Badge.Text}" />
+                                    </Border>
+                                    <Border Style="{StaticResource Badge.Warning}"
+                                            Margin="0,0,6,0"
+                                            Visibility="{Binding IsProtectionEnabled, Converter={StaticResource BoolToVisibility.Invert}}">
+                                        <TextBlock Text="{loc:Loc Restore.Protection.Off}" Style="{StaticResource Badge.Text}" />
+                                    </Border>
+                                    <Border Style="{StaticResource Badge.Danger}"
+                                            Visibility="{Binding IsProtectionSupported, Converter={StaticResource BoolToVisibility.Invert}}">
+                                        <TextBlock Text="{loc:Loc Restore.Protection.Unsupported}" Style="{StaticResource Badge.Text}" />
+                                    </Border>
+                                </WrapPanel>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Top">
+                                <Button Style="{StaticResource Button.Ghost}"
+                                        Margin="0,0,8,0"
+                                        Command="{Binding OpenProtectionCommand}"
+                                        Content="{loc:Loc Restore.Protection.Open}" />
+                                <Button Style="{StaticResource Button.Ghost}"
+                                        Command="{Binding OpenWizardCommand}"
+                                        Content="{loc:Loc Restore.Protection.Wizard}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <TextBlock Text="{Binding PointDescriptionLabel}"
+                               Style="{StaticResource Text.Label}"
+                               Margin="0,16,0,0" />
+
+                    <TextBox Text="{Binding PointDescription, UpdateSourceTrigger=PropertyChanged}"
+                             Margin="0,6,0,0" />
+
+                    <TextBlock Text="{Binding PointDescriptionNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,6,0,0" />
+
+                    <Button Style="{StaticResource Button.Primary}"
+                            HorizontalAlignment="Left"
+                            Margin="0,12,0,0"
+                            Command="{Binding CreatePointCommand}"
+                            IsEnabled="{Binding CanCreatePoint}"
+                            Content="{loc:Loc Restore.Point.Create.Button}" />
+
+                    <TextBlock Text="{Binding PointsNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,14,0,0" />
+
+                    <ItemsControl ItemsSource="{Binding Points}" Margin="0,8,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card.Inset}" Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Title}"
+                                                       Style="{StaticResource Text.Body}"
+                                                       FontWeight="SemiBold"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding CreatedText}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       Margin="0,3,0,0" />
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding TypeText}"
+                                                   Style="{StaticResource Text.Caption}"
+                                                   VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{Binding PointsEmptyText}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding HasPoints, Converter={StaticResource BoolToVisibility.Invert}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ ALTERACOES REGISTRADAS ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Text="{Binding RecordsTitle}" Style="{StaticResource Text.Section}" />
+                            <TextBlock Text="{Binding RecordsHint}"
+                                       Style="{StaticResource Text.Caption}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top">
+                            <Button Style="{StaticResource Button.Ghost}"
+                                    Margin="0,0,8,0"
+                                    Command="{Binding ExportCommand}"
+                                    Content="{loc:Loc Restore.Export.Button}" />
+                            <Button Style="{StaticResource Button.Danger}"
+                                    Command="{Binding ClearHistoryCommand}"
+                                    Content="{loc:Loc Restore.Clear.Button}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Text="{Binding RecordsSummaryText}"
+                               Style="{StaticResource Text.Caption}"
+                               Margin="0,10,0,0" />
+
+                    <ListBox ItemsSource="{Binding Records}"
+                             SelectedItem="{Binding SelectedRecord}"
+                             Margin="0,12,0,0"
+                             MaxHeight="360"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card.Inset}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Title}"
+                                                       Style="{StaticResource Text.Value}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding Description}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,3,0,0"
+                                                       Visibility="{Binding HasDescription, Converter={StaticResource BoolToVisibility}}" />
+
+                                            <WrapPanel Margin="0,7,0,0">
+                                                <Border Style="{StaticResource Badge.Info}" Margin="0,0,6,0">
+                                                    <TextBlock Text="{Binding KindText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge.Success}"
+                                                        Margin="0,0,6,0"
+                                                        Visibility="{Binding CanRestore, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{Binding UndoStateText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge}"
+                                                        Visibility="{Binding CanRestore, Converter={StaticResource BoolToVisibility.Invert}}">
+                                                    <TextBlock Text="{Binding UndoStateText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge.Warning}"
+                                                        Margin="6,0,0,0"
+                                                        Visibility="{Binding HasTargetPath, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{Binding TargetPath}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                            </WrapPanel>
+
+                                            <TextBlock Text="{Binding RestoreMessage}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,7,0,0"
+                                                       Visibility="{Binding HasRestoreMessage, Converter={StaticResource BoolToVisibility}}" />
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding CreatedText}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       HorizontalAlignment="Right" />
+                                            <Button Style="{StaticResource Button.Ghost}"
+                                                    Margin="0,8,0,0"
+                                                    Padding="10,4"
+                                                    MinHeight="26"
+                                                    Command="{Binding DataContext.UndoCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}"
+                                                    IsEnabled="{Binding CanRestore}"
+                                                    Content="{loc:Loc Restore.Undo.Button}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <TextBlock Text="{Binding RecordsEmptyText}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding HasRecords, Converter={StaticResource BoolToVisibility.Invert}}" />
+
+                    <TextBlock Text="{Binding SelectedRecordTitle}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasSelectedRecord, Converter={StaticResource BoolToVisibility}}" />
+
+                    <Button Style="{StaticResource Button.Primary}"
+                            HorizontalAlignment="Left"
+                            Margin="0,10,0,0"
+                            Command="{Binding UndoCommand}"
+                            IsEnabled="{Binding HasSelectedRecord}"
+                            Content="{loc:Loc Restore.Undo.Selected}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Aviso legal -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Info}"
+                          Stretch="Uniform" Width="15" Height="15"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Accent}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding Disclaimer}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,516 @@
+<UserControl x:Class="OptimizerPC.App.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:OptimizerPC.App.Localization"
+             xmlns:vm="clr-namespace:OptimizerPC.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+        <StackPanel>
+
+            <!-- Cabecalho -->
+            <TextBlock Style="{StaticResource Text.Hero}"
+                       Text="{Binding Subtitle}" />
+
+            <!-- Erro -->
+            <Border Margin="0,12,0,0"
+                    Style="{StaticResource Card}"
+                    Background="{StaticResource Brush.Danger.Soft}"
+                    BorderBrush="{StaticResource Brush.Danger}"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Width="18" Height="18"
+                          VerticalAlignment="Top"
+                          Fill="{StaticResource Brush.Danger}"
+                          Stretch="Uniform"
+                          Data="{StaticResource Icon.Warning}" />
+                    <TextBlock Margin="10,0,0,0"
+                               Style="{StaticResource Text.Body}"
+                               Foreground="{StaticResource Brush.Danger}"
+                               TextWrapping="Wrap"
+                               Text="{Binding ErrorMessage}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Ocupado -->
+            <Border Margin="0,12,0,0"
+                    Style="{StaticResource Card}"
+                    Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Body}" Text="{Binding BusyText}" />
+                    <ProgressBar Margin="0,10,0,0"
+                                 Style="{StaticResource ProgressBar.Thin}"
+                                 IsIndeterminate="{Binding IsProgressIndeterminate}"
+                                 Value="{Binding ProgressPercent, Mode=OneWay}" />
+                    <Button Margin="0,10,0,0"
+                            HorizontalAlignment="Left"
+                            Style="{StaticResource Button.Ghost}"
+                            Command="{Binding CancelCommand}"
+                            Content="{loc:Loc Common.Cancel}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Aparencia -->
+            <Border Margin="0,12,0,0" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Section}" Text="{Binding AppearanceTitle}" />
+
+                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Label}" Text="{Binding LanguageLabel}" />
+                    <ComboBox Margin="0,4,0,0"
+                              HorizontalAlignment="Left"
+                              MinWidth="240"
+                              ItemsSource="{Binding Languages}"
+                              SelectedItem="{Binding SelectedLanguage}"
+                              DisplayMemberPath="Text" />
+                    <TextBlock Margin="0,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding LanguageNote}" />
+
+                    <TextBlock Margin="0,14,0,0" Style="{StaticResource Text.Label}" Text="{Binding ThemeLabel}" />
+                    <ComboBox Margin="0,4,0,0"
+                              HorizontalAlignment="Left"
+                              MinWidth="240"
+                              ItemsSource="{Binding Themes}"
+                              SelectedItem="{Binding SelectedTheme}"
+                              DisplayMemberPath="Text" />
+                    <TextBlock Margin="0,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding ThemeNote}" />
+
+                    <CheckBox Margin="0,14,0,0"
+                              Content="{Binding MotionLabel}"
+                              IsChecked="{Binding ReducedMotion}" />
+                    <TextBlock Margin="24,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding MotionNote}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Inicializacao -->
+            <Border Margin="0,12,0,0" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Section}" Text="{Binding StartupTitle}" />
+
+                    <CheckBox Margin="0,12,0,0"
+                              Content="{Binding StartWithWindowsLabel}"
+                              IsChecked="{Binding StartWithWindows}" />
+                    <TextBlock Margin="24,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding StartWithWindowsNote}" />
+
+                    <CheckBox Margin="0,14,0,0"
+                              Content="{Binding MinimizeToTrayLabel}"
+                              IsChecked="{Binding MinimizeToTray}" />
+                    <TextBlock Margin="24,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding MinimizeToTrayNote}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Comportamento -->
+            <Border Margin="0,12,0,0" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Section}" Text="{Binding BehaviorTitle}" />
+
+                    <CheckBox Margin="0,12,0,0"
+                              Content="{Binding ConfirmLabel}"
+                              IsChecked="{Binding ConfirmBeforeActions}" />
+                    <TextBlock Margin="24,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding ConfirmNote}" />
+
+                    <CheckBox Margin="0,14,0,0"
+                              Content="{Binding RestorePointLabel}"
+                              IsChecked="{Binding CreateRestorePointBeforeChanges}" />
+                    <TextBlock Margin="24,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding RestorePointNote}" />
+
+                    <CheckBox Margin="0,14,0,0"
+                              Content="{Binding NotificationsLabel}"
+                              IsChecked="{Binding NotificationsEnabled}" />
+                    <TextBlock Margin="24,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding NotificationsNote}" />
+
+                    <Button Margin="0,12,0,0"
+                            HorizontalAlignment="Left"
+                            Style="{StaticResource Button.Ghost}"
+                            Command="{Binding TestNotificationCommand}"
+                            Content="{Binding TestNotificationText}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Monitoramento -->
+            <Border Margin="0,12,0,0" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Section}" Text="{Binding MonitoringTitle}" />
+
+                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Label}" Text="{Binding IntervalLabel}" />
+                    <ComboBox Margin="0,4,0,0"
+                              HorizontalAlignment="Left"
+                              MinWidth="160"
+                              ItemsSource="{Binding Intervals}"
+                              SelectedItem="{Binding SelectedInterval}"
+                              DisplayMemberPath="Text" />
+                    <TextBlock Margin="0,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding IntervalNote}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Manutencao automatica -->
+            <Border Margin="0,12,0,0" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Section}" Text="{Binding ScheduleTitle}" />
+
+                    <CheckBox Margin="0,12,0,0"
+                              Content="{Binding ScheduleEnableLabel}"
+                              IsChecked="{Binding ScheduleEnabled}" />
+                    <TextBlock Margin="24,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding ScheduleNote}" />
+
+                    <StackPanel Visibility="{Binding ShowScheduleFields, Converter={StaticResource BoolToVisibility}}">
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                                <TextBlock Style="{StaticResource Text.Label}" Text="{Binding FrequencyLabel}" />
+                                <ComboBox Margin="0,4,0,0"
+                                          HorizontalAlignment="Left"
+                                          MinWidth="160"
+                                          ItemsSource="{Binding Frequencies}"
+                                          SelectedItem="{Binding SelectedFrequency}"
+                                          DisplayMemberPath="Text" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1"
+                                        Visibility="{Binding ShowWeekday, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Style="{StaticResource Text.Label}" Text="{Binding WeekdayLabel}" />
+                                <ComboBox Margin="0,4,0,0"
+                                          HorizontalAlignment="Left"
+                                          MinWidth="160"
+                                          ItemsSource="{Binding Weekdays}"
+                                          SelectedItem="{Binding SelectedWeekday}"
+                                          DisplayMemberPath="Text" />
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Margin="0,14,0,0" Style="{StaticResource Text.Label}" Text="{Binding TimeLabel}" />
+                        <TextBox Margin="0,4,0,0"
+                                 Width="120"
+                                 HorizontalAlignment="Left"
+                                 Text="{Binding ScheduleTime, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Margin="0,4,0,0"
+                                   Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap"
+                                   Text="{Binding TimeNote}" />
+
+                        <TextBlock Margin="0,14,0,0"
+                                   Style="{StaticResource Text.Label}"
+                                   Text="{Binding ScheduleActionsLabel}" />
+                        <CheckBox Margin="0,8,0,0"
+                                  Content="{Binding ScheduleRunDiagnosisLabel}"
+                                  IsChecked="{Binding ScheduleRunDiagnosis}" />
+                        <CheckBox Margin="0,8,0,0"
+                                  Content="{Binding ScheduleRunCleanupLabel}"
+                                  IsChecked="{Binding ScheduleRunCleanup}" />
+                        <CheckBox Margin="0,8,0,0"
+                                  Content="{Binding ScheduleGenerateReportLabel}"
+                                  IsChecked="{Binding ScheduleGenerateReport}" />
+                    </StackPanel>
+
+                    <StackPanel Margin="0,16,0,0" Orientation="Horizontal">
+                        <Button Style="{StaticResource Button.Primary}"
+                                Command="{Binding ApplyScheduleCommand}"
+                                IsEnabled="{Binding CanAct}"
+                                Content="{Binding ScheduleApplyText}" />
+                        <Button Margin="10,0,0,0"
+                                Style="{StaticResource Button.Danger}"
+                                Command="{Binding RemoveScheduleCommand}"
+                                IsEnabled="{Binding CanAct}"
+                                Content="{Binding ScheduleRemoveText}" />
+                    </StackPanel>
+
+                    <TextBlock Margin="0,10,0,0"
+                               Style="{StaticResource Text.Label}"
+                               Foreground="{StaticResource Brush.Accent}"
+                               TextWrapping="Wrap"
+                               Text="{Binding ScheduleStatusText}"
+                               Visibility="{Binding HasScheduleStatus, Converter={StaticResource BoolToVisibility}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Otimizacao automatica -->
+            <Border Margin="0,12,0,0" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Section}" Text="{Binding AutoTitle}" />
+
+                    <CheckBox Margin="0,12,0,0"
+                              Content="{Binding AutoEnableLabel}"
+                              IsChecked="{Binding AutoOptimizationEnabled}" />
+                    <TextBlock Margin="24,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding AutoNote}" />
+
+                    <StackPanel Visibility="{Binding AutoOptimizationEnabled, Converter={StaticResource BoolToVisibility}}">
+                        <CheckBox Margin="0,14,0,0"
+                                  Content="{Binding AutoCleanTempLabel}"
+                                  IsChecked="{Binding AutoCleanTemporaryFiles}" />
+                        <CheckBox Margin="0,8,0,0"
+                                  Content="{Binding AutoCleanCacheLabel}"
+                                  IsChecked="{Binding AutoCleanSafeCache}" />
+                        <CheckBox Margin="0,8,0,0"
+                                  Content="{Binding AutoStartupLabel}"
+                                  IsChecked="{Binding AutoOptimizeStartup}" />
+                        <CheckBox Margin="0,8,0,0"
+                                  Content="{Binding AutoPowerLabel}"
+                                  IsChecked="{Binding AutoAdjustPowerPlan}" />
+                        <CheckBox Margin="0,8,0,0"
+                                  Content="{Binding AutoSpaceLabel}"
+                                  IsChecked="{Binding AutoFreeUpSpace}" />
+                        <CheckBox Margin="0,8,0,0"
+                                  Content="{Binding AutoRecycleLabel}"
+                                  IsChecked="{Binding AutoEmptyRecycleBin}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Logs -->
+            <Border Margin="0,12,0,0" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Section}" Text="{Binding LogsTitle}" />
+
+                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Label}" Text="{Binding LogLevelLabel}" />
+                    <ComboBox Margin="0,4,0,0"
+                              HorizontalAlignment="Left"
+                              MinWidth="160"
+                              ItemsSource="{Binding LogLevels}"
+                              SelectedItem="{Binding SelectedLogLevel}"
+                              DisplayMemberPath="Text" />
+                    <TextBlock Margin="0,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding LogLevelNote}" />
+
+                    <CheckBox Margin="0,14,0,0"
+                              Content="{Binding PersistLogsLabel}"
+                              IsChecked="{Binding PersistLogsInDatabase}" />
+                    <TextBlock Margin="24,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding PersistLogsNote}" />
+
+                    <TextBlock Margin="0,14,0,0" Style="{StaticResource Text.Label}" Text="{Binding RetentionLabel}" />
+                    <ComboBox Margin="0,4,0,0"
+                              HorizontalAlignment="Left"
+                              MinWidth="160"
+                              ItemsSource="{Binding Retentions}"
+                              SelectedItem="{Binding SelectedRetention}"
+                              DisplayMemberPath="Text" />
+                    <TextBlock Margin="0,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding RetentionNote}" />
+
+                    <Separator Margin="0,16,0,12" />
+
+                    <TextBlock Style="{StaticResource Text.Label}" Text="{Binding LogViewerTitle}" />
+                    <TextBlock Margin="0,4,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding LogViewerHint}" />
+
+                    <StackPanel Margin="0,10,0,0" Orientation="Horizontal">
+                        <Button Style="{StaticResource Button.Ghost}"
+                                Command="{Binding RefreshLogsCommand}"
+                                Content="{Binding RefreshLogsText}" />
+                        <Button Margin="10,0,0,0"
+                                Style="{StaticResource Button.Ghost}"
+                                Command="{Binding CopyLogsCommand}"
+                                Content="{loc:Loc Settings.Logs.Viewer.Copy}" />
+                        <Button Margin="10,0,0,0"
+                                Style="{StaticResource Button.Ghost}"
+                                Command="{Binding ClearLogsCommand}"
+                                Content="{Binding ClearLogsText}" />
+                    </StackPanel>
+
+                    <TextBlock Margin="0,10,0,0"
+                               Style="{StaticResource Text.Label}"
+                               Foreground="{StaticResource Brush.Accent}"
+                               TextWrapping="Wrap"
+                               Text="{Binding StatusText}"
+                               Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}" />
+
+                    <TextBlock Margin="0,10,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               Text="{Binding LogsSummaryText}"
+                               Visibility="{Binding HasLogs, Converter={StaticResource BoolToVisibility.Invert}}" />
+
+                    <ListBox Margin="0,10,0,0"
+                             MaxHeight="260"
+                             ItemsSource="{Binding LogEntries}"
+                             Visibility="{Binding HasLogs, Converter={StaticResource BoolToVisibility}}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card.Inset}" Margin="0,0,0,6">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource Text.Caption}" Text="{Binding TimestampText}" />
+                                            <TextBlock Margin="8,0,0,0"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       Text="{Binding LevelText}" />
+                                            <TextBlock Margin="8,0,0,0"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       Text="{Binding Category}" />
+                                        </StackPanel>
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Style="{StaticResource Text.Body}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding Message}" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   Style="{StaticResource Text.Mono}"
+                                                   TextWrapping="Wrap"
+                                                   Text="{Binding Exception}"
+                                                   Visibility="{Binding HasException, Converter={StaticResource BoolToVisibility}}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </Border>
+
+            <!-- Pastas -->
+            <Border Margin="0,12,0,0" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Section}" Text="{Binding PathsTitle}" />
+
+                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Label}" Text="{Binding DataFolderLabel}" />
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Style="{StaticResource Card.Inset}">
+                            <TextBlock Style="{StaticResource Text.Mono}"
+                                       TextTrimming="CharacterEllipsis"
+                                       Text="{Binding DataFolder}" />
+                        </Border>
+                        <Button Grid.Column="1"
+                                Margin="10,0,0,0"
+                                Style="{StaticResource Button.Ghost}"
+                                Command="{Binding CopyPathCommand}"
+                                CommandParameter="{Binding DataFolder}"
+                                Content="{Binding CopyPathText}" />
+                    </Grid>
+
+                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Label}" Text="{Binding LogsFolderLabel}" />
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Style="{StaticResource Card.Inset}">
+                            <TextBlock Style="{StaticResource Text.Mono}"
+                                       TextTrimming="CharacterEllipsis"
+                                       Text="{Binding LogsFolder}" />
+                        </Border>
+                        <Button Grid.Column="1"
+                                Margin="10,0,0,0"
+                                Style="{StaticResource Button.Ghost}"
+                                Command="{Binding CopyPathCommand}"
+                                CommandParameter="{Binding LogsFolder}"
+                                Content="{Binding CopyPathText}" />
+                    </Grid>
+
+                    <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Label}" Text="{Binding ReportsFolderLabel}" />
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Style="{StaticResource Card.Inset}">
+                            <TextBlock Style="{StaticResource Text.Mono}"
+                                       TextTrimming="CharacterEllipsis"
+                                       Text="{Binding ReportsFolder}" />
+                        </Border>
+                        <Button Grid.Column="1"
+                                Margin="10,0,0,0"
+                                Style="{StaticResource Button.Ghost}"
+                                Command="{Binding CopyPathCommand}"
+                                CommandParameter="{Binding ReportsFolder}"
+                                Content="{Binding CopyPathText}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Privacidade -->
+            <Border Margin="0,12,0,0" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Section}" Text="{Binding PrivacyTitle}" />
+                    <TextBlock Margin="0,10,0,0"
+                               Style="{StaticResource Text.Body}"
+                               TextWrapping="Wrap"
+                               Text="{Binding PrivacyText}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Sobre -->
+            <Border Margin="0,12,0,0" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Text.Section}" Text="{Binding AboutTitle}" />
+
+                    <TextBlock Margin="0,10,0,0"
+                               Style="{StaticResource Text.Body}"
+                               Text="{Binding VersionLine}" />
+
+                    <Separator Margin="0,16,0,12" />
+
+                    <TextBlock Style="{StaticResource Text.Label}" Text="{Binding ElevationTitle}" />
+                    <StackPanel Margin="0,6,0,0" Orientation="Horizontal">
+                        <Border Style="{StaticResource Badge.Accent}">
+                            <TextBlock Style="{StaticResource Badge.Text}" Text="{Binding ElevationText}" />
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Margin="0,8,0,0"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Text="{Binding ElevationNote}" />
+
+                    <Button Margin="0,12,0,0"
+                            HorizontalAlignment="Left"
+                            Style="{StaticResource Button.Ghost}"
+                            Command="{Binding RestartElevatedCommand}"
+                            Content="{Binding RestartElevatedText}" />
+
+                    <Separator Margin="0,16,0,12" />
+
+                    <Button HorizontalAlignment="Left"
+                            Style="{StaticResource Button.Danger}"
+                            Command="{Binding ResetDefaultsCommand}"
+                            Content="{Binding ResetText}" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

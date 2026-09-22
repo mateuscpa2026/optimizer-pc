@@ -1,0 +1,105 @@
+<Window x:Class="OptimizerPC.App.Views.MessageDialogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Optimizer PC"
+        Width="468"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        FontFamily="{StaticResource Font.Primary}">
+
+    <Border Margin="18"
+            Background="{DynamicResource Brush.Card}"
+            BorderBrush="{DynamicResource Brush.BorderStrong}"
+            BorderThickness="1"
+            CornerRadius="{StaticResource Radius.Large}"
+            Effect="{DynamicResource Effect.Window}">
+        <Grid Margin="22">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border x:Name="IconHost"
+                        Width="38"
+                        Height="38"
+                        VerticalAlignment="Top"
+                        Background="{DynamicResource Brush.Accent.Soft}"
+                        CornerRadius="{StaticResource Radius.Pill}">
+                    <Path x:Name="IconPath"
+                          Width="20"
+                          Height="20"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          Data="{StaticResource Icon.Info}"
+                          Stretch="Uniform"
+                          Stroke="{DynamicResource Brush.Accent}"
+                          StrokeEndLineCap="Round"
+                          StrokeLineJoin="Round"
+                          StrokeStartLineCap="Round"
+                          StrokeThickness="1.8" />
+                </Border>
+                <TextBlock x:Name="TitleText"
+                           Grid.Column="1"
+                           Margin="13,3,0,0"
+                           VerticalAlignment="Top"
+                           Style="{StaticResource Text.Subtitle}"
+                           FontFamily="{StaticResource Font.Display}"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource Brush.Text.Primary}"
+                           TextWrapping="Wrap" />
+            </Grid>
+
+            <StackPanel Grid.Row="1" Margin="0,16,0,0">
+                <TextBlock x:Name="MessageText"
+                           Style="{StaticResource Text.Body}"
+                           Foreground="{DynamicResource Brush.Text.Secondary}" />
+                <Border x:Name="DetailHost"
+                        Margin="0,12,0,0"
+                        Padding="12"
+                        Background="{DynamicResource Brush.Inset}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource Radius.Medium}"
+                        Visibility="Collapsed">
+                    <ScrollViewer MaxHeight="190"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <TextBlock x:Name="DetailText"
+                                   FontFamily="{StaticResource Font.Mono}"
+                                   FontSize="{StaticResource Font.Size.Small}"
+                                   Foreground="{DynamicResource Brush.Text.Secondary}"
+                                   TextWrapping="Wrap" />
+                    </ScrollViewer>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Grid.Row="2"
+                        Margin="0,22,0,0"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal">
+                <Button x:Name="SecondaryButton"
+                        MinWidth="104"
+                        Margin="0,0,10,0"
+                        Click="OnSecondaryClick"
+                        Content="Cancelar"
+                        Style="{StaticResource Button.Ghost}" />
+                <Button x:Name="PrimaryButton"
+                        MinWidth="104"
+                        Click="OnPrimaryClick"
+                        Content="OK"
+                        Style="{StaticResource Button.Primary}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

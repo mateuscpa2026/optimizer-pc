@@ -1,0 +1,313 @@
+<UserControl x:Class="OptimizerPC.App.Views.ServicesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:loc="clr-namespace:OptimizerPC.App.Localization"
+             xmlns:vm="clr-namespace:OptimizerPC.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:ServicesViewModel}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+        <StackPanel>
+
+            <!-- Aviso de erro -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Background="{DynamicResource Brush.Danger.Soft}"
+                    BorderBrush="{DynamicResource Brush.Danger}"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Warning}"
+                          Stretch="Uniform" Width="16" Height="16"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Danger.Text}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               Style="{StaticResource Text.Body}"
+                               Foreground="{DynamicResource Brush.Danger.Text}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Operacao em andamento -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Text="{Binding BusyText}" Style="{StaticResource Text.Label}" />
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                Padding="10,4"
+                                MinHeight="26"
+                                Command="{Binding CancelCommand}"
+                                Content="{loc:Loc Common.Cancel}" />
+                    </Grid>
+                    <ProgressBar Style="{StaticResource ProgressBar.Thin}"
+                                 Margin="0,10,0,0"
+                                 Maximum="100"
+                                 Value="{Binding ProgressPercent, Mode=OneWay}"
+                                 IsIndeterminate="{Binding IsProgressIndeterminate}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ RESUMO ============ -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Text="{loc:Loc Services.Summary.Title}" Style="{StaticResource Text.Section}" />
+                            <TextBlock Text="{loc:Loc Services.Summary.Subtitle}"
+                                       Style="{StaticResource Text.Caption}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Command="{Binding RefreshCommand}"
+                                IsEnabled="{Binding IsIdle}"
+                                Content="{loc:Loc Common.Refresh}" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding StatusText}"
+                               Style="{StaticResource Text.Label}"
+                               Foreground="{DynamicResource Brush.Accent}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0"
+                                Visibility="{Binding HasEntries, Converter={StaticResource BoolToVisibility}}">
+                        <Border Style="{StaticResource Badge.Success}" Margin="0,0,8,0">
+                            <TextBlock Text="{Binding RunningCountText}" Style="{StaticResource Badge.Text}" />
+                        </Border>
+                        <Border Style="{StaticResource Badge}" Margin="0,0,8,0">
+                            <TextBlock Text="{Binding StoppedCountText}" Style="{StaticResource Badge.Text}" />
+                        </Border>
+                        <Border Style="{StaticResource Badge.Info}">
+                            <TextBlock Text="{Binding ProtectedCountText}" Style="{StaticResource Badge.Text}" />
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Filtro -->
+                    <Grid Margin="0,14,0,0"
+                          Visibility="{Binding HasEntries, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBox Grid.Column="0"
+                                 Style="{StaticResource TextBox.Search}"
+                                 Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <CheckBox Grid.Column="1"
+                                  Margin="14,0,0,0"
+                                  VerticalAlignment="Center"
+                                  IsChecked="{Binding RunningOnly}"
+                                  Content="{loc:Loc Services.Filter.RunningOnly}" />
+                        <CheckBox Grid.Column="2"
+                                  Margin="14,0,0,0"
+                                  VerticalAlignment="Center"
+                                  IsChecked="{Binding ThirdPartyOnly}"
+                                  Content="{loc:Loc Services.Filter.ThirdPartyOnly}" />
+
+                        <Button Grid.Column="3"
+                                Style="{StaticResource Button.Ghost}"
+                                Margin="14,0,0,0"
+                                VerticalAlignment="Center"
+                                Command="{Binding ClearFilterCommand}"
+                                Content="{loc:Loc Services.Filter.Clear}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Elevacao pendente -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,12,0,0"
+                    Background="{DynamicResource Brush.Warning.Soft}"
+                    BorderBrush="{DynamicResource Brush.Warning}"
+                    Visibility="{Binding ShowElevationNote, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Shield}"
+                          Stretch="Uniform" Width="15" Height="15"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Warning.Text}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding ElevationNote}"
+                               Style="{StaticResource Text.Caption}"
+                               Foreground="{DynamicResource Brush.Warning.Text}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ LISTA ============ -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,12,0,0"
+                    Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="{loc:Loc Services.List.Title}" Style="{StaticResource Text.Section}" />
+
+                    <TextBlock Text="{loc:Loc Services.List.EmptyFilter}"
+                               Style="{StaticResource Text.Caption}"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding IsFilteredEmpty, Converter={StaticResource BoolToVisibility}}" />
+
+                    <ListBox ItemsSource="{Binding Items}"
+                             SelectedItem="{Binding SelectedService}"
+                             MaxHeight="420"
+                             Margin="0,12,0,0"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card.Inset}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding DisplayName}"
+                                                       Style="{StaticResource Text.Value}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding Name}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Margin="0,3,0,0" />
+
+                                            <WrapPanel Margin="0,7,0,0">
+                                                <Border Style="{StaticResource Badge.Danger}"
+                                                        Margin="0,0,6,0"
+                                                        Visibility="{Binding IsSystemCritical, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{loc:Loc Services.Item.Protected}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge.Info}" Margin="0,0,6,0">
+                                                    <TextBlock Text="{Binding OriginText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge}" Margin="0,0,6,0">
+                                                    <TextBlock Text="{Binding StateText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge.Accent}">
+                                                    <TextBlock Text="{Binding StartModeText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                            </WrapPanel>
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Description}"
+                                                   Style="{StaticResource Text.Caption}"
+                                                   TextWrapping="Wrap"
+                                                   MaxWidth="260"
+                                                   VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="{loc:Loc Services.List.Empty}"
+                       Style="{StaticResource Text.Caption}"
+                       TextWrapping="Wrap"
+                       Margin="0,12,0,0"
+                       Visibility="{Binding HasEntries, Converter={StaticResource BoolToVisibility.Invert}}" />
+
+            <!-- ============ ACOES ============ -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,12,0,0"
+                    Visibility="{Binding HasEntries, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="{loc:Loc Services.Detail.Title}" Style="{StaticResource Text.Section}" />
+
+                    <TextBlock Text="{Binding SelectionTitle}"
+                               Style="{StaticResource Text.Value}"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0" />
+
+                    <TextBlock Text="{Binding SelectionPath}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,0"
+                               Visibility="{Binding SelectionHasPath, Converter={StaticResource BoolToVisibility}}" />
+
+                    <TextBlock Text="{loc:Loc Services.Detail.SelectHint}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,0"
+                               Visibility="{Binding HasSelection, Converter={StaticResource BoolToVisibility.Invert}}" />
+
+                    <WrapPanel Margin="0,14,0,0">
+                        <Button Style="{StaticResource Button.Primary}"
+                                Margin="0,0,8,8"
+                                Command="{Binding StartServiceCommand}"
+                                IsEnabled="{Binding CanStart}"
+                                Content="{loc:Loc Services.Action.Start}" />
+                        <Button Style="{StaticResource Button.Ghost}"
+                                Margin="0,0,8,8"
+                                Command="{Binding StopServiceCommand}"
+                                IsEnabled="{Binding CanStop}"
+                                Content="{loc:Loc Services.Action.Stop}" />
+                    </WrapPanel>
+
+                    <TextBlock Text="{loc:Loc Services.StartMode.Label}"
+                               Style="{StaticResource Text.Label}"
+                               Margin="0,10,0,0" />
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="240" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <ComboBox Grid.Column="0"
+                                  ItemsSource="{Binding StartModeOptions}"
+                                  SelectedValue="{Binding SelectedStartMode}"
+                                  SelectedValuePath="Mode"
+                                  DisplayMemberPath="Text"
+                                  IsEnabled="{Binding CanChangeStartMode}" />
+
+                        <Button Grid.Column="1"
+                                Style="{StaticResource Button.Ghost}"
+                                Margin="10,0,0,0"
+                                Command="{Binding ApplyStartModeCommand}"
+                                IsEnabled="{Binding CanApplyStartMode}"
+                                Content="{loc:Loc Services.StartMode.Apply}" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding ChangeModeNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Seguranca e reversao -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="{loc:Loc Services.Safety.Title}" Style="{StaticResource Text.Section}" />
+                    <TextBlock Text="{Binding SafetyNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,6,0,0" />
+                    <Button Style="{StaticResource Button.Ghost}"
+                            HorizontalAlignment="Left"
+                            Margin="0,12,0,0"
+                            Command="{Binding OpenRestoreCommand}"
+                            Content="{loc:Loc Services.Safety.RestoreAction}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

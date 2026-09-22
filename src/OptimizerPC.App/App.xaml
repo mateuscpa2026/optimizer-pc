@@ -1,0 +1,67 @@
+<Application x:Class="OptimizerPC.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:OptimizerPC.App.ViewModels"
+             xmlns:views="clr-namespace:OptimizerPC.App.Views"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- O tema fica no primeiro indice: e este dicionario que o ThemeService substitui. -->
+                <ResourceDictionary Source="Themes/Dark.xaml" />
+                <ResourceDictionary Source="Themes/Icons.xaml" />
+                <ResourceDictionary Source="Themes/Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Telas: cada ViewModel tem uma View associada. O shell troca apenas o conteudo. -->
+            <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+                <views:DashboardView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:DiagnosisViewModel}">
+                <views:DiagnosisView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:OptimizationViewModel}">
+                <views:OptimizationView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:CleaningViewModel}">
+                <views:CleaningView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:StartupViewModel}">
+                <views:StartupView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ProcessesViewModel}">
+                <views:ProcessesView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ServicesViewModel}">
+                <views:ServicesView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:PerformanceViewModel}">
+                <views:PerformanceView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:StorageViewModel}">
+                <views:StorageView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:LowEndViewModel}">
+                <views:LowEndView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:GamerViewModel}">
+                <views:GamerView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ToolsViewModel}">
+                <views:ToolsView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:RestoreViewModel}">
+                <views:RestoreView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ReportsViewModel}">
+                <views:ReportsView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:HistoryViewModel}">
+                <views:HistoryView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+                <views:SettingsView />
+            </DataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

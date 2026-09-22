@@ -1,0 +1,402 @@
+<UserControl x:Class="OptimizerPC.App.Views.PerformanceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:OptimizerPC.App.Controls"
+             xmlns:loc="clr-namespace:OptimizerPC.App.Localization"
+             xmlns:vm="clr-namespace:OptimizerPC.App.ViewModels"
+             mc:Ignorable="d"
+             d:DataContext="{d:DesignInstance Type=vm:PerformanceViewModel}">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+        <StackPanel>
+
+            <!-- Aviso de erro -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Background="{DynamicResource Brush.Danger.Soft}"
+                    BorderBrush="{DynamicResource Brush.Danger}"
+                    Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="{StaticResource Icon.Warning}"
+                          Stretch="Uniform" Width="16" Height="16"
+                          VerticalAlignment="Top"
+                          Stroke="{DynamicResource Brush.Danger.Text}"
+                          StrokeThickness="1.7"
+                          StrokeLineJoin="Round" />
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               Style="{StaticResource Text.Body}"
+                               Foreground="{DynamicResource Brush.Danger.Text}"
+                               TextWrapping="Wrap"
+                               Margin="10,0,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- Operacao em andamento -->
+            <Border Style="{StaticResource Card}"
+                    Margin="0,0,0,12"
+                    Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <Grid>
+                        <TextBlock Text="{Binding BusyText}" Style="{StaticResource Text.Label}" />
+                        <Button Style="{StaticResource Button.Ghost}"
+                                HorizontalAlignment="Right"
+                                Padding="10,4"
+                                MinHeight="26"
+                                Command="{Binding CancelCommand}"
+                                Content="{loc:Loc Common.Cancel}" />
+                    </Grid>
+                    <ProgressBar Style="{StaticResource ProgressBar.Thin}"
+                                 Margin="0,10,0,0"
+                                 Maximum="100"
+                                 Value="{Binding ProgressPercent, Mode=OneWay}"
+                                 IsIndeterminate="{Binding IsProgressIndeterminate}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ CONTROLE ============ -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <Grid>
+                        <StackPanel>
+                            <TextBlock Text="{loc:Loc Performance.Title}" Style="{StaticResource Text.Section}" />
+                            <TextBlock Text="{Binding RealTimeNote}"
+                                       Style="{StaticResource Text.Caption}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top">
+                            <Button Style="{StaticResource Button.Ghost}"
+                                    Margin="0,0,8,0"
+                                    Command="{Binding ClearHistoryCommand}"
+                                    Content="{loc:Loc Performance.ClearHistory}" />
+                            <Button Command="{Binding ToggleMonitoringCommand}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource Button.Primary}">
+                                        <Setter Property="Content" Value="{loc:Loc Performance.Start}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMonitoring}" Value="True">
+                                                <Setter Property="Content" Value="{loc:Loc Performance.Stop}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Text="{Binding StatusText}"
+                               Style="{StaticResource Text.Label}"
+                               Foreground="{DynamicResource Brush.Accent}"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasStatus, Converter={StaticResource BoolToVisibility}}" />
+
+                    <Grid Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding IntervalLabel}"
+                                   Style="{StaticResource Text.Label}"
+                                   VerticalAlignment="Center" />
+
+                        <ComboBox Grid.Column="1"
+                                  Margin="12,0,0,0"
+                                  MinWidth="140"
+                                  ItemsSource="{Binding IntervalOptions}"
+                                  SelectedValue="{Binding SelectedInterval}"
+                                  SelectedValuePath="Milliseconds"
+                                  DisplayMemberPath="Text" />
+
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding UpdatedText}"
+                                   Style="{StaticResource Text.Caption}"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ METRICAS ============ -->
+            <Grid Margin="0,12,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- CPU -->
+                <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource Card}">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock Text="{loc:Loc Performance.Metric.Cpu}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding CpuText}" Style="{StaticResource Text.Value}" HorizontalAlignment="Right" />
+                        </Grid>
+                        <ProgressBar Style="{StaticResource ProgressBar.Thin}"
+                                     Margin="0,12,0,0"
+                                     Maximum="100"
+                                     Value="{Binding CpuPercent}" />
+                        <controls:Sparkline Height="34" Margin="0,10,0,0"
+                                            Values="{Binding CpuHistory}"
+                                            Capacity="120"
+                                            MaxValue="100"
+                                            Stroke="{DynamicResource Brush.Accent}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Memoria -->
+                <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource Card}" Margin="12,0,0,0">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock Text="{loc:Loc Performance.Metric.Memory}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding MemoryPercentText}" Style="{StaticResource Text.Value}" HorizontalAlignment="Right" />
+                        </Grid>
+                        <ProgressBar Style="{StaticResource ProgressBar.Thin}"
+                                     Margin="0,12,0,0"
+                                     Maximum="100"
+                                     Value="{Binding MemoryPercent}" />
+                        <controls:Sparkline Height="34" Margin="0,10,0,0"
+                                            Values="{Binding MemoryHistory}"
+                                            Capacity="120"
+                                            MaxValue="100"
+                                            Stroke="{DynamicResource Brush.Secondary}" />
+                        <TextBlock Text="{Binding MemoryText}"
+                                   Style="{StaticResource Text.Caption}"
+                                   Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Disco -->
+                <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource Card}" Margin="0,12,0,0">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock Text="{loc:Loc Performance.Metric.Disk}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding DiskPercentText}" Style="{StaticResource Text.Value}" HorizontalAlignment="Right" />
+                        </Grid>
+                        <ProgressBar Style="{StaticResource ProgressBar.Thin}"
+                                     Margin="0,12,0,0"
+                                     Maximum="100"
+                                     Value="{Binding DiskPercent}" />
+                        <controls:Sparkline Height="34" Margin="0,10,0,0"
+                                            Values="{Binding DiskHistory}"
+                                            Capacity="120"
+                                            MaxValue="100"
+                                            Stroke="{DynamicResource Brush.Warning}" />
+                        <TextBlock Text="{Binding DiskSpeedText}"
+                                   Style="{StaticResource Text.Caption}"
+                                   Margin="0,6,0,0"
+                                   Visibility="{Binding IsDiskActivityAvailable, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Text="{loc:Loc Performance.Metric.Unavailable}"
+                                   Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,6,0,0"
+                                   Visibility="{Binding IsDiskActivityAvailable, Converter={StaticResource BoolToVisibility.Invert}}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Rede -->
+                <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource Card}" Margin="12,12,0,0">
+                    <StackPanel>
+                        <Grid>
+                            <TextBlock Text="{loc:Loc Performance.Metric.Network}" Style="{StaticResource Text.Label}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding NetworkText}" Style="{StaticResource Text.Value}" HorizontalAlignment="Right" />
+                        </Grid>
+                        <controls:Sparkline Height="34" Margin="0,12,0,10"
+                                            Values="{Binding NetworkHistory}"
+                                            Capacity="120"
+                                            AutoScale="True"
+                                            Stroke="{DynamicResource Brush.Accent}" />
+                        <TextBlock Text="{Binding NetworkSpeedText}"
+                                   Style="{StaticResource Text.Caption}"
+                                   Visibility="{Binding IsNetworkActivityAvailable, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Text="{loc:Loc Performance.Metric.Unavailable}"
+                                   Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap"
+                                   Visibility="{Binding IsNetworkActivityAvailable, Converter={StaticResource BoolToVisibility.Invert}}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- ============ CONTADORES ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <StackPanel MinWidth="150">
+                            <TextBlock Text="{Binding ProcessCountLabel}" Style="{StaticResource Text.Label}" />
+                            <TextBlock Text="{Binding ProcessCountText}" Style="{StaticResource Text.Value}" Margin="0,6,0,0" />
+                        </StackPanel>
+                        <StackPanel MinWidth="150" Margin="24,0,0,0">
+                            <TextBlock Text="{Binding ThreadCountLabel}" Style="{StaticResource Text.Label}" />
+                            <TextBlock Text="{Binding ThreadCountText}" Style="{StaticResource Text.Value}" Margin="0,6,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding MonitoringHint}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0" />
+
+                    <TextBlock Text="{Binding PrivacyNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,6,0,0" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ PLANO DE ENERGIA ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="{Binding PowerTitle}" Style="{StaticResource Text.Section}" />
+                    <TextBlock Text="{Binding PowerNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,0" />
+
+                    <Grid Margin="0,14,0,0"
+                          Visibility="{Binding HasPowerPlans, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <ComboBox Grid.Column="0"
+                                  ItemsSource="{Binding PowerPlans}"
+                                  SelectedItem="{Binding SelectedPlan}"
+                                  DisplayMemberPath="Name" />
+
+                        <Button Grid.Column="1"
+                                Style="{StaticResource Button.Primary}"
+                                Margin="10,0,0,0"
+                                Command="{Binding ApplyPlanCommand}"
+                                IsEnabled="{Binding CanApplyPlan}"
+                                Content="{loc:Loc Performance.Power.Apply}" />
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding PowerPlans}" Margin="0,12,0,0"
+                                  Visibility="{Binding HasPowerPlans, Converter={StaticResource BoolToVisibility}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource Card.Inset}" Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding Name}"
+                                                       Style="{StaticResource Text.Body}"
+                                                       FontWeight="SemiBold"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Text="{Binding Description}"
+                                                       Style="{StaticResource Text.Caption}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,3,0,0" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,7,0,0">
+                                                <Border Style="{StaticResource Badge.Info}" Margin="0,0,6,0">
+                                                    <TextBlock Text="{Binding KindText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge.Success}"
+                                                        Visibility="{Binding IsActive, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{loc:Loc Performance.Power.Active}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{Binding PowerUnavailable}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0"
+                               Visibility="{Binding HasPowerPlans, Converter={StaticResource BoolToVisibility.Invert}}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ EFEITOS VISUAIS ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{Binding EffectsTitle}" Style="{StaticResource Text.Label}" />
+                        <TextBlock Text="{Binding EffectsStateText}"
+                                   Style="{StaticResource Text.Body}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,5,0,0" />
+                        <TextBlock Text="{Binding EffectsNote}"
+                                   Style="{StaticResource Text.Caption}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,5,0,0" />
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            Style="{StaticResource Button.Ghost}"
+                            VerticalAlignment="Center"
+                            Margin="14,0,0,0"
+                            Command="{Binding ToggleVisualEffectsCommand}"
+                            IsEnabled="{Binding EffectsAvailable}"
+                            Content="{Binding EffectsActionText}" />
+                </Grid>
+            </Border>
+
+            <!-- ============ HARDWARE ============ -->
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0"
+                    Visibility="{Binding HasHardwareInfo, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding HardwareTitle}" Style="{StaticResource Text.Section}" />
+                    <TextBlock Text="{Binding MachineSummary}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,4,0,0" />
+
+                    <Grid Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding MemoryLabel}" Style="{StaticResource Text.Label}" Margin="0,0,0,8" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MemoryModulesText}" Style="{StaticResource Text.Caption}" TextWrapping="Wrap" Margin="0,0,0,8" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding GpuLabel}" Style="{StaticResource Text.Label}" Margin="0,0,0,8" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding GpuText}" Style="{StaticResource Text.Caption}" TextWrapping="Wrap" Margin="0,0,0,8" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding OsLabel}" Style="{StaticResource Text.Label}" Margin="0,0,0,8" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding OsText}" Style="{StaticResource Text.Caption}" TextWrapping="Wrap" Margin="0,0,0,8" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="{Binding UptimeLabel}" Style="{StaticResource Text.Label}" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding UptimeText}" Style="{StaticResource Text.Caption}" TextWrapping="Wrap" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding TemperatureNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,12,0,0" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,34 @@
+<Project>
+
+  <PropertyGroup>
+    <Version>1.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Company>Optimizer PC</Company>
+    <Product>Optimizer PC</Product>
+    <Copyright>Copyright (c) 2026 Optimizer PC</Copyright>
+    <Trademark>Optimizer PC</Trademark>
+    <Authors>Optimizer PC</Authors>
+    <Description>Otimize. Limpe. Desempenhe.</Description>
+
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <PlatformTarget>x64</PlatformTarget>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>5</WarningLevel>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NeutralLanguage>pt-BR</NeutralLanguage>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+
+    <Deterministic>true</Deterministic>
+    <DebugType>embedded</DebugType>
+    <NoWarn>$(NoWarn);CS1591;CA1416</NoWarn>
+  </PropertyGroup>
+
+</Project>

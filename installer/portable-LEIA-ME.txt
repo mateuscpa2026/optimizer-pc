@@ -1,0 +1,24 @@
+Optimizer PC 1.0 - versao portatil
+Otimize. Limpe. Desempenhe.
+
+COMO USAR
+  1. Extraia esta pasta em qualquer local (pen drive, area de trabalho, Documents).
+  2. Execute OptimizerPC.exe. Nao ha instalacao e nao e preciso ter o .NET instalado.
+  3. Para remover, basta apagar a pasta. Nada fica preso ao Windows.
+
+ONDE FICAM OS DADOS
+  Historico, configuracoes, backup de restauracao e registros ficam em:
+      %LOCALAPPDATA%\OptimizerPC
+  Apagar a pasta do programa nao remove esses dados. Se quiser uma limpeza
+  completa, remova tambem a pasta acima (faca isso com o programa fechado).
+
+PRIVILEGIOS
+  O programa inicia sem privilegios administrativos. As funcoes que precisam
+  de permissao elevada pedem a confirmacao do Windows na hora do uso, e
+  continuam disponiveis apenas as demais quando a elevacao e recusada.
+
+SEGURANCA
+  Nada e enviado para a internet. Nenhuma alteracao e feita sem que apareca o
+  que sera alterado, com registro no historico e possibilidade de restauracao.
+
+Requisitos: Windows 10 ou 11, 64 bits.

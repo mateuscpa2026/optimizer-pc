@@ -213,6 +213,20 @@ public interface IDuplicateFinder
 }
 
 /// <summary>
+/// Envio de arquivos para a Lixeira do Windows. A operação é sempre reversível
+/// e nunca exclui permanentemente: cada caminho passa por validação de segurança
+/// antes de qualquer alteração no disco.
+/// </summary>
+public interface IRecycleBinMover
+{
+    Task<FileMoveResult> MoveToRecycleBinAsync(
+        IReadOnlyList<string> paths,
+        IReadOnlyList<string> allowedRoots,
+        IProgress<StorageScanProgress>? progress = null,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
 /// Ferramentas nativas do Windows disponíveis na tela "Ferramentas".
 /// </summary>
 public interface IWindowsToolsService

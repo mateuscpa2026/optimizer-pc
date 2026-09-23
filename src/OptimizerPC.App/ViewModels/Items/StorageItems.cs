@@ -1,10 +1,22 @@
 using System.IO;
+using CommunityToolkit.Mvvm.ComponentModel;
 using OptimizerPC.Core;
 using OptimizerPC.Core.Abstractions;
 using OptimizerPC.Core.Formatting;
 using OptimizerPC.Core.Models;
 
 namespace OptimizerPC.App.ViewModels.Items;
+
+/// <summary>
+/// Disponibilidade de um arquivo para envio a Lixeira, ja avaliada pela regra de
+/// seguranca. Quando nao e permitido, <see cref="ReasonKey"/> explica o motivo.
+/// </summary>
+public readonly record struct FileAvailability(bool IsAllowed, string ReasonKey)
+{
+    public static FileAvailability Allow() => new(true, string.Empty);
+
+    public static FileAvailability Block(string reasonKey) => new(false, reasonKey);
+}
 
 /// <summary>Volume montado no sistema, com espaco usado e livre.</summary>
 public sealed class VolumeItemViewModel : ItemViewModelBase
@@ -146,13 +158,35 @@ public sealed class StorageCategoryItemViewModel : ItemViewModelBase
     public string ShareText => Humanize.Percent(SharePercent);
 }
 
-/// <summary>Arquivo grande localizado na varredura de armazenamento.</summary>
-public sealed class LargeFileItemViewModel : ItemViewModelBase
+/// <summary>
+/// Arquivo grande localizado na varredura de armazenamento. Pode ser marcado
+/// individualmente para envio a Lixeira quando a regra de seguranca permite.
+/// </summary>
+public sealed partial class LargeFileItemViewModel : ItemViewModelBase
 {
-    public LargeFileItemViewModel(LargeFileInfo model, ILocalizer localizer)
-        : base(localizer) => Model = model;
+    public LargeFileItemViewModel(LargeFileInfo model, FileAvailability availability, ILocalizer localizer)
+        : base(localizer)
+    {
+        Model = model;
+        IsAvailable = availability.IsAllowed;
+        BlockedReasonKey = availability.ReasonKey;
+    }
 
     public LargeFileInfo Model { get; }
+
+    [ObservableProperty]
+    private bool _isSelected;
+
+    public bool IsAvailable { get; }
+
+    public string BlockedReasonKey { get; }
+
+    public bool IsBlocked => IsAvailable is false;
+
+    /// <summary>Motivo, ja traduzido, pelo qual o arquivo nao pode ser movido.</summary>
+    public string BlockedReason => IsBlocked && string.IsNullOrEmpty(BlockedReasonKey) is false
+        ? Localizer[BlockedReasonKey]
+        : string.Empty;
 
     public string FullPath => Model.FullPath;
 
@@ -172,18 +206,33 @@ public sealed class LargeFileItemViewModel : ItemViewModelBase
 }
 
 /// <summary>Arquivo individual dentro de um grupo de duplicados.</summary>
-public sealed class DuplicateFileItemViewModel : ItemViewModelBase
+public sealed partial class DuplicateFileItemViewModel : ItemViewModelBase
 {
-    public DuplicateFileItemViewModel(DuplicateFileInfo model, bool isOldest, ILocalizer localizer)
+    public DuplicateFileItemViewModel(DuplicateFileInfo model, bool isOldest, FileAvailability availability, ILocalizer localizer)
         : base(localizer)
     {
         Model = model;
         IsOldest = isOldest;
+        IsAvailable = availability.IsAllowed;
+        BlockedReasonKey = availability.ReasonKey;
     }
 
     public DuplicateFileInfo Model { get; }
 
     public bool IsOldest { get; }
+
+    [ObservableProperty]
+    private bool _isSelected;
+
+    public bool IsAvailable { get; }
+
+    public string BlockedReasonKey { get; }
+
+    public bool IsBlocked => IsAvailable is false;
+
+    public string BlockedReason => IsBlocked && string.IsNullOrEmpty(BlockedReasonKey) is false
+        ? Localizer[BlockedReasonKey]
+        : string.Empty;
 
     public string FullPath => Model.FullPath;
 
@@ -199,16 +248,25 @@ public sealed class DuplicateFileItemViewModel : ItemViewModelBase
 /// <summary>Grupo de arquivos identicos por conteudo.</summary>
 public sealed class DuplicateGroupItemViewModel : ItemViewModelBase
 {
-    public DuplicateGroupItemViewModel(DuplicateGroup model, ILocalizer localizer)
+    public DuplicateGroupItemViewModel(
+        DuplicateGroup model,
+        Func<string, FileAvailability> authorize,
+        ILocalizer localizer)
         : base(localizer)
     {
+        ArgumentNullException.ThrowIfNull(authorize);
+
         Model = model;
         var oldestPath = model.Files.Count == 0
             ? null
             : model.Files.OrderBy(f => f.LastWriteTimeUtc).First().FullPath;
 
         Files = model.Files
-            .Select(f => new DuplicateFileItemViewModel(f, string.Equals(f.FullPath, oldestPath, StringComparison.OrdinalIgnoreCase), localizer))
+            .Select(f => new DuplicateFileItemViewModel(
+                f,
+                string.Equals(f.FullPath, oldestPath, StringComparison.OrdinalIgnoreCase),
+                authorize(f.FullPath),
+                localizer))
             .ToList();
     }
 

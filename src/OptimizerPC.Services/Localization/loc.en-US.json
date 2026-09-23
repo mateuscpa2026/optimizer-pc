@@ -165,6 +165,10 @@
   "Risk.Critical": "Critical",
   "Score.Disclaimer": "The health score is an internal estimate by Optimizer PC, calculated from data collected locally. It is not a scientific diagnosis and does not replace the official Windows tools.",
 
+  "Storage.Selection.Action": "Move to Recycle Bin",
+  "Storage.Selection.History": "{0} file(s) moved to the Recycle Bin ({1}).",
+  "Storage.Selection.History.Result": "Completed",
+
   "Schedule.Error.NothingSelected": "Select at least one action for automatic maintenance.",
   "Schedule.Error.NoExecutable": "The application executable could not be identified to schedule the task.",
   "Schedule.Error.InvalidTime": "Enter a valid time in HH:mm format.",

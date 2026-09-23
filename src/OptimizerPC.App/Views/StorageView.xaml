@@ -543,6 +543,54 @@
                                Margin="0,12,0,0"
                                Visibility="{Binding HasLargeFiles, Converter={StaticResource BoolToVisibility.Invert}}" />
 
+                    <Grid Margin="0,12,0,0"
+                          Visibility="{Binding HasLargeFiles, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button Grid.Column="0"
+                                Style="{StaticResource Button.Ghost}"
+                                Command="{Binding SelectAllLargeFilesCommand}"
+                                Content="{Binding SelectAllText}" />
+
+                        <Button Grid.Column="1"
+                                Style="{StaticResource Button.Ghost}"
+                                Margin="8,0,0,0"
+                                Command="{Binding ClearLargeFilesSelectionCommand}"
+                                Content="{Binding ClearSelectionText}" />
+
+                        <StackPanel Grid.Column="2"
+                                    Margin="14,0,10,0"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="{Binding LargeFileSelectionText}" Style="{StaticResource Text.Label}" />
+                            <TextBlock Text="{Binding LargeFileSelectedSizeText}"
+                                       Style="{StaticResource Text.Caption}"
+                                       Margin="0,2,0,0"
+                                       Visibility="{Binding HasLargeFileSelection, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
+
+                        <Button Grid.Column="3"
+                                Style="{StaticResource Button.Danger}"
+                                Command="{Binding MoveLargeFilesToRecycleBinCommand}"
+                                Content="{Binding MoveToRecycleBinText}" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding LargeFileBlockedNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding HasLargeFileBlocked, Converter={StaticResource BoolToVisibility}}" />
+
+                    <TextBlock Text="{Binding SelectionNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding HasLargeFiles, Converter={StaticResource BoolToVisibility}}" />
+
                     <ItemsControl ItemsSource="{Binding LargeFiles}"
                                   Margin="0,12,0,0"
                                   Visibility="{Binding HasLargeFiles, Converter={StaticResource BoolToVisibility}}">
@@ -551,11 +599,19 @@
                                 <Border Style="{StaticResource Card.Inset}" Margin="0,0,0,8">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
 
-                                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                        <CheckBox Grid.Column="0"
+                                                  Margin="0,3,12,0"
+                                                  VerticalAlignment="Top"
+                                                  IsChecked="{Binding IsSelected}"
+                                                  IsEnabled="{Binding IsAvailable}"
+                                                  ToolTip="{Binding BlockedReason}" />
+
+                                        <StackPanel Grid.Column="1" Margin="0,0,12,0">
                                             <TextBlock Text="{Binding FileName}"
                                                        Style="{StaticResource Text.Value}"
                                                        TextTrimming="CharacterEllipsis"
@@ -572,13 +628,17 @@
                                                 <Border Style="{StaticResource Badge}" Margin="0,0,6,0">
                                                     <TextBlock Text="{Binding Extension}" Style="{StaticResource Badge.Text}" />
                                                 </Border>
-                                                <Border Style="{StaticResource Badge}">
+                                                <Border Style="{StaticResource Badge}" Margin="0,0,6,0">
                                                     <TextBlock Text="{Binding LastWriteText}" Style="{StaticResource Badge.Text}" />
+                                                </Border>
+                                                <Border Style="{StaticResource Badge.Danger}"
+                                                        Visibility="{Binding IsBlocked, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="{Binding BlockedReason}" Style="{StaticResource Badge.Text}" />
                                                 </Border>
                                             </StackPanel>
                                         </StackPanel>
 
-                                        <Button Grid.Column="1"
+                                        <Button Grid.Column="2"
                                                 Style="{StaticResource Button.Ghost}"
                                                 VerticalAlignment="Center"
                                                 Command="{Binding Path=DataContext.CopyPathCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -647,6 +707,54 @@
                                Margin="0,12,0,0"
                                Visibility="{Binding HasDuplicates, Converter={StaticResource BoolToVisibility.Invert}}" />
 
+                    <Grid Margin="0,12,0,0"
+                          Visibility="{Binding HasDuplicates, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <Button Grid.Column="0"
+                                Style="{StaticResource Button.Ghost}"
+                                Command="{Binding SelectAllDuplicateFilesCommand}"
+                                Content="{Binding SelectAllText}" />
+
+                        <Button Grid.Column="1"
+                                Style="{StaticResource Button.Ghost}"
+                                Margin="8,0,0,0"
+                                Command="{Binding ClearDuplicateFilesSelectionCommand}"
+                                Content="{Binding ClearSelectionText}" />
+
+                        <StackPanel Grid.Column="2"
+                                    Margin="14,0,10,0"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DuplicateSelectionText}" Style="{StaticResource Text.Label}" />
+                            <TextBlock Text="{Binding DuplicateSelectedSizeText}"
+                                       Style="{StaticResource Text.Caption}"
+                                       Margin="0,2,0,0"
+                                       Visibility="{Binding HasDuplicateSelection, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
+
+                        <Button Grid.Column="3"
+                                Style="{StaticResource Button.Danger}"
+                                Command="{Binding MoveDuplicateFilesToRecycleBinCommand}"
+                                Content="{Binding MoveToRecycleBinText}" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding DuplicateBlockedNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding HasDuplicateBlocked, Converter={StaticResource BoolToVisibility}}" />
+
+                    <TextBlock Text="{Binding SelectionNote}"
+                               Style="{StaticResource Text.Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding HasDuplicates, Converter={StaticResource BoolToVisibility}}" />
+
                     <ItemsControl ItemsSource="{Binding DuplicateGroups}"
                                   Margin="0,12,0,0"
                                   Visibility="{Binding HasDuplicates, Converter={StaticResource BoolToVisibility}}">
@@ -685,27 +793,43 @@
                                                 <DataTemplate>
                                                     <Grid Margin="0,0,0,6">
                                                         <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
                                                             <ColumnDefinition Width="*" />
                                                             <ColumnDefinition Width="Auto" />
                                                             <ColumnDefinition Width="Auto" />
                                                         </Grid.ColumnDefinitions>
 
-                                                        <TextBlock Grid.Column="0"
+                                                        <CheckBox Grid.Column="0"
+                                                                  Margin="0,0,10,0"
+                                                                  VerticalAlignment="Center"
+                                                                  IsChecked="{Binding IsSelected}"
+                                                                  IsEnabled="{Binding IsAvailable}"
+                                                                  ToolTip="{Binding BlockedReason}" />
+
+                                                        <TextBlock Grid.Column="1"
                                                                    Text="{Binding FullPath}"
                                                                    Style="{StaticResource Text.Caption}"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    ToolTip="{Binding FullPath}"
                                                                    VerticalAlignment="Center" />
 
-                                                        <Border Grid.Column="1"
-                                                                Style="{StaticResource Badge.Info}"
-                                                                Margin="10,0,0,0"
-                                                                VerticalAlignment="Center"
-                                                                Visibility="{Binding IsOldest, Converter={StaticResource BoolToVisibility}}">
-                                                            <TextBlock Text="{Binding OldestText}" Style="{StaticResource Badge.Text}" />
-                                                        </Border>
+                                                        <StackPanel Grid.Column="2"
+                                                                    Orientation="Horizontal"
+                                                                    Margin="10,0,0,0"
+                                                                    VerticalAlignment="Center">
+                                                            <Border Style="{StaticResource Badge.Info}"
+                                                                    Visibility="{Binding IsOldest, Converter={StaticResource BoolToVisibility}}">
+                                                                <TextBlock Text="{Binding OldestText}" Style="{StaticResource Badge.Text}" />
+                                                            </Border>
 
-                                                        <Button Grid.Column="2"
+                                                            <Border Style="{StaticResource Badge.Danger}"
+                                                                    Margin="6,0,0,0"
+                                                                    Visibility="{Binding IsBlocked, Converter={StaticResource BoolToVisibility}}">
+                                                                <TextBlock Text="{Binding BlockedReason}" Style="{StaticResource Badge.Text}" />
+                                                            </Border>
+                                                        </StackPanel>
+
+                                                        <Button Grid.Column="3"
                                                                 Style="{StaticResource Button.Ghost}"
                                                                 Margin="10,0,0,0"
                                                                 Padding="10,4"

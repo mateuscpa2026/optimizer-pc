@@ -25,6 +25,7 @@ public partial class App : Application
     private SingleInstanceGuard? _guard;
     private ShellWindow? _shell;
     private bool _isMaintenance;
+    private int _exitCode;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -42,6 +43,7 @@ public partial class App : Application
         catch (Exception exception)
         {
             ShowStartupFailure(exception);
+            _exitCode = 1;
             Shutdown(1);
             return;
         }
@@ -76,6 +78,10 @@ public partial class App : Application
         _guard = null;
 
         base.OnExit(e);
+
+        // Rede de seguranca: depois de liberar servicos e bandeja, forcamos o fim do
+        // processo para que nenhuma thread remanescente mantenha o aplicativo aberto.
+        Environment.Exit(_exitCode);
     }
 
     private static ServiceProvider BuildServices()
@@ -210,6 +216,7 @@ public partial class App : Application
         }
         finally
         {
+            _exitCode = exitCode;
             Shutdown(exitCode);
         }
     }
@@ -234,6 +241,7 @@ public partial class App : Application
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
 
+            _exitCode = 1;
             Shutdown(1);
             return;
         }

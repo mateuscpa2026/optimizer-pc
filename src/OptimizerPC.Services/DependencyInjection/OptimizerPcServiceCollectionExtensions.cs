@@ -116,6 +116,7 @@ public static class OptimizerPcServiceCollectionExtensions
         services.AddSingleton<IProcessService, ProcessService>();
         services.AddSingleton<IDuplicateFinder, DuplicateFinder>();
         services.AddSingleton<ILargeFileFinder, LargeFileFinder>();
+        services.AddSingleton<IRecycleBinMover, RecycleBinMover>();
         services.AddSingleton<IPowerService, PowerService>();
         services.AddSingleton<IWindowsToolsService, WindowsToolsService>();
     }

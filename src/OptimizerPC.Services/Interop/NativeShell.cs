@@ -60,6 +60,60 @@ internal static class NativeShell
     internal const uint SHERB_NOSOUND = 0x00000004;
 
     /// <summary>
+    /// Estrutura de SHFileOperation. As listas <see cref="pFrom"/> e <see cref="pTo"/> sao
+    /// cadeias terminadas por dois caracteres nulos.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal struct SHFILEOPSTRUCT
+    {
+        public IntPtr hwnd;
+        public uint wFunc;
+        [MarshalAs(UnmanagedType.LPWStr)] public string? pFrom;
+        [MarshalAs(UnmanagedType.LPWStr)] public string? pTo;
+        public ushort fFlags;
+        public int fAnyOperationsAborted;
+        public IntPtr hNameMappings;
+        [MarshalAs(UnmanagedType.LPWStr)] public string? lpszProgressTitle;
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    internal static extern int SHFileOperation(ref SHFILEOPSTRUCT fileOperation);
+
+    internal const uint FO_DELETE = 0x0003;
+
+    internal const ushort FOF_NOCONFIRMATION = 0x0010;
+    internal const ushort FOF_NOERRORUI = 0x0400;
+    internal const ushort FOF_ALLOWUNDO = 0x0040;
+    internal const ushort FOF_WANTNUKEWARNING = 0x4000;
+
+    internal const int DE_OPCANCELLED = 0x75;
+    internal const int DE_ACCESSDENIEDSRC = 0x78;
+    internal const int DE_INVALIDFILES = 0x7C;
+    internal const int DE_FILENAMETOOLONG = 0x81;
+    internal const int DE_SAMEFILE = 0x71;
+
+    /// <summary>
+    /// Envia um arquivo para a Lixeira. Nao exclui permanentemente: a operacao
+    /// pode ser desfeita pelo usuario na propria Lixeira do Windows.
+    /// </summary>
+    internal static int TryMoveToRecycleBin(string path)
+    {
+        var operation = new SHFILEOPSTRUCT
+        {
+            hwnd = IntPtr.Zero,
+            wFunc = FO_DELETE,
+            pFrom = path + "\0",
+            pTo = null,
+            fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_WANTNUKEWARNING,
+            fAnyOperationsAborted = 0,
+            hNameMappings = IntPtr.Zero,
+            lpszProgressTitle = null
+        };
+
+        return SHFileOperation(ref operation);
+    }
+
+    /// <summary>
     /// Inicia um processo. Quando <paramref name="elevate"/> for verdadeiro, solicita elevacao via UAC.
     /// </summary>
     internal static bool TryStart(string fileName, string? arguments, bool elevate, bool hidden, out string error)

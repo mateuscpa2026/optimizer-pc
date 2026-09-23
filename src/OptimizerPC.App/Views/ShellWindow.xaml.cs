@@ -43,12 +43,22 @@ public partial class ShellWindow : Window
     public ShellViewModel ViewModel => _viewModel;
 
     /// <summary>
-    /// Encerra o aplicativo de fato. O fechamento normal da janela (botao X) e
-    /// sempre interceptado para perguntar ao usuario; este caminho pula a pergunta.
+    /// Encerra o aplicativo de fato: para o monitoramento, remove o icone da bandeja,
+    /// fecha a janela e desliga o <see cref="Application"/>. Como o ShutdownMode e
+    /// OnExplicitShutdown, nada aqui permanece vivo depois deste metodo.
     /// </summary>
     public void RequestExit()
     {
+        if (_shutdownConfirmed)
+        {
+            return;
+        }
+
         _shutdownConfirmed = true;
+
+        _viewModel.RequestShutdown();
+        _tray.Hide();
+
         Close();
         Application.Current?.Shutdown();
     }
@@ -68,34 +78,19 @@ public partial class ShellWindow : Window
         Focus();
     }
 
-    protected override async void OnClosing(CancelEventArgs e)
+    protected override void OnClosing(CancelEventArgs e)
     {
         base.OnClosing(e);
 
-        if (e.Cancel)
+        if (e.Cancel || _shutdownConfirmed)
         {
             return;
         }
 
-        if (_shutdownConfirmed)
-        {
-            ViewModel.RequestShutdown();
-            return;
-        }
-
-        // O fechamento direto e sempre interceptado: o usuario escolhe entre
-        // minimizar para a bandeja e encerrar o aplicativo.
+        // O botao fechar encerra tudo: nao ha mais "minimizar para a bandeja" aqui.
+        // Cancelamos o fechamento padrao apenas para executar a saida completa.
         e.Cancel = true;
-
-        if (await ViewModel.RequestCloseAsync())
-        {
-            RequestExit();
-            return;
-        }
-
-        Hide();
-        _tray.Show();
-        _tray.Notify(_localizer["Tray.Minimized.Title"], _localizer["Tray.Minimized.Message"]);
+        RequestExit();
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -113,6 +108,7 @@ public partial class ShellWindow : Window
         SizeChanged -= OnSizeChanged;
         Loaded -= OnLoaded;
         Closed -= OnClosed;
+        _tray.Dispose();
         ViewModel.Dispose();
     }
 
@@ -154,7 +150,20 @@ public partial class ShellWindow : Window
 
     private void OnTrayExitRequested(object? sender, EventArgs e) => RequestExit();
 
-    private void OnMinimizeClick(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+    private void OnMinimizeClick(object sender, RoutedEventArgs e)
+    {
+        // Minimizar para a bandeja e opcional (Configuracoes). O botao fechar, nao:
+        // ele sempre encerra o aplicativo por completo.
+        if (_viewModel.MinimizeToTray)
+        {
+            Hide();
+            _tray.Show();
+            _tray.Notify(_localizer["Tray.Minimized.Title"], _localizer["Tray.Minimized.Message"]);
+            return;
+        }
+
+        WindowState = WindowState.Minimized;
+    }
 
     private void OnMaximizeClick(object sender, RoutedEventArgs e)
         => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;

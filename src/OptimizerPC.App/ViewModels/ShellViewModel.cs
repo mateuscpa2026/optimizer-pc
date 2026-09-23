@@ -27,7 +27,6 @@ public sealed partial class ShellViewModel : ViewModelBase
     private readonly IDialogService _dialogs;
 
     private bool _isMonitoringSubscribed;
-    private bool _isShuttingDown;
 
     public ShellViewModel(
         INavigationService navigation,
@@ -292,41 +291,21 @@ public sealed partial class ShellViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Decisao de fechamento: com "minimizar para a bandeja" ativo a janela some
-    /// e o aplicativo continua monitorando. A confirmacao e sempre do usuario.
+    /// Quando ativo, o botao minimizar esconde a janela na area de notificacao em vez
+    /// de apenas reduzir para a barra de tarefas. O botao fechar sempre encerra tudo.
     /// </summary>
-    public async Task<bool> RequestCloseAsync()
+    public bool MinimizeToTray => _settings.Current.MinimizeToTray;
+
+    /// <summary>
+    /// Prepara o encerramento real: interrompe o monitoramento continuo e libera a
+    /// assinatura de eventos, para que nenhum timer ou thread de segundo plano continue
+    /// consumindo memoria depois que o usuario fecha o aplicativo.
+    /// </summary>
+    public void RequestShutdown()
     {
-        if (_isShuttingDown)
-        {
-            return true;
-        }
-
-        if (_settings.Current.MinimizeToTray is false)
-        {
-            _isShuttingDown = true;
-            return true;
-        }
-
-        var minimize = await _dialogs
-            .ConfirmActionAsync(
-                "Dialog.Close.Title",
-                "Dialog.Close.Message",
-                "Dialog.Close.Minimize",
-                detail: Localizer["Dialog.Close.Detail"])
-            .ConfigureAwait(true);
-
-        if (minimize)
-        {
-            return false;
-        }
-
-        _isShuttingDown = true;
-        return true;
+        UnsubscribeMonitoring();
+        _monitoring.Stop();
     }
-
-    /// <summary>Encerra o aplicativo a partir do menu da bandeja.</summary>
-    public void RequestShutdown() => _isShuttingDown = true;
 
     public void UpdateClock() => ClockText = Humanize.Date(DateTime.Now);
 

@@ -1,22 +1,27 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OptimizerPC.App.Services;
 using OptimizerPC.App.ViewModels.Items;
+using OptimizerPC.App.Views;
 using OptimizerPC.Core;
 using OptimizerPC.Core.Abstractions;
 using OptimizerPC.Core.Formatting;
 using OptimizerPC.Core.Models;
+using OptimizerPC.Core.Security;
 
 namespace OptimizerPC.App.ViewModels;
 
 /// <summary>
 /// Armazenamento: volumes montados, saude dos discos, uso por categoria, arquivos
-/// grandes e arquivos duplicados. Tudo nesta tela e somente leitura: nada e apagado
-/// aqui. A remocao acontece na tela de Limpeza, sempre com confirmacao. Os caminhos
-/// encontrados podem ser copiados para o usuario decidir o que fazer.
+/// grandes e arquivos duplicados. As varreduras sao somente leitura. Os arquivos
+/// listados podem ser marcados um a um (ou todos de uma vez) para envio a Lixeira,
+/// sempre com confirmacao e sempre de forma reversivel: nada e excluido de vez aqui.
+/// Cada arquivo passa pela validacao de seguranca antes de aparecer selecionavel, e
+/// os que sao recusados mostram o motivo em vez de um botao sem efeito.
 /// </summary>
 public sealed partial class StorageViewModel : ViewModelBase
 {
@@ -43,14 +48,25 @@ public sealed partial class StorageViewModel : ViewModelBase
     private readonly IDriveHealthService _driveHealth;
     private readonly ILargeFileFinder _largeFileFinder;
     private readonly IDuplicateFinder _duplicateFinder;
+    private readonly IRecycleBinMover _recycleBin;
+    private readonly SafePathValidator _validator;
     private readonly IElevationService _elevation;
     private readonly IDialogService _dialogs;
+
+    private IReadOnlyList<string> _largeFileRoots = Array.Empty<string>();
+    private IReadOnlyList<string> _duplicateRoots = Array.Empty<string>();
+    private long _largeFileMinimumBytes;
+    private int _duplicateScannedFiles;
+    private long _duplicateMinimumBytes;
+    private bool _isUpdatingSelection;
 
     public StorageViewModel(
         IStorageAnalyzer analyzer,
         IDriveHealthService driveHealth,
         ILargeFileFinder largeFileFinder,
         IDuplicateFinder duplicateFinder,
+        IRecycleBinMover recycleBin,
+        SafePathValidator validator,
         IElevationService elevation,
         IDialogService dialogs,
         ILocalizer localizer,
@@ -61,6 +77,8 @@ public sealed partial class StorageViewModel : ViewModelBase
         _driveHealth = driveHealth;
         _largeFileFinder = largeFileFinder;
         _duplicateFinder = duplicateFinder;
+        _recycleBin = recycleBin;
+        _validator = validator;
         _elevation = elevation;
         _dialogs = dialogs;
 
@@ -215,6 +233,55 @@ public sealed partial class StorageViewModel : ViewModelBase
 
     public string MinimumSizeLabel => Localizer["Storage.Minimum.Label"];
 
+    public string SelectAllText => Localizer["Common.SelectAll"];
+
+    public string ClearSelectionText => Localizer["Common.ClearSelection"];
+
+    public string MoveToRecycleBinText => Localizer["Storage.Selection.Action"];
+
+    public string SelectionNote => Localizer["Storage.Selection.Note"];
+
+    public string LargeFileSelectionText => Localizer.Format("Storage.Selection.Count", LargeFileSelectedCount, LargeFiles.Count);
+
+    public string LargeFileSelectedSizeText => Localizer.Format("Storage.Selection.Size", Humanize.Bytes(LargeFileSelectedBytes));
+
+    public int LargeFileSelectedCount => LargeFiles.Count(file => file.IsSelected);
+
+    public long LargeFileSelectedBytes => LargeFiles.Where(file => file.IsSelected).Sum(file => file.SizeBytes);
+
+    public bool HasLargeFileSelection => LargeFileSelectedCount > 0;
+
+    public int LargeFileBlockedCount => LargeFiles.Count(file => file.IsBlocked);
+
+    public bool HasLargeFileBlocked => LargeFileBlockedCount > 0;
+
+    public string LargeFileBlockedNote => Localizer.Format("Storage.Selection.BlockedNote", LargeFileBlockedCount);
+
+    public string DuplicateSelectionText => Localizer.Format("Storage.Selection.Count", DuplicateSelectedCount, DuplicateFileCount);
+
+    public string DuplicateSelectedSizeText => Localizer.Format("Storage.Selection.Size", Humanize.Bytes(DuplicateSelectedBytes));
+
+    public int DuplicateFileCount => DuplicateGroups.Sum(group => group.Files.Count);
+
+    public int DuplicateSelectedCount => DuplicateFileList.Count(file => file.IsSelected);
+
+    public long DuplicateSelectedBytes => DuplicateFileList.Where(file => file.IsSelected).Sum(file => file.Model.SizeBytes);
+
+    public bool HasDuplicateSelection => DuplicateSelectedCount > 0;
+
+    public int DuplicateBlockedCount => DuplicateFileList.Count(file => file.IsBlocked);
+
+    public bool HasDuplicateBlocked => DuplicateBlockedCount > 0;
+
+    public string DuplicateBlockedNote => Localizer.Format("Storage.Selection.BlockedNote", DuplicateBlockedCount);
+
+    public bool CanMoveLargeFiles => IsBusy is false && HasLargeFileSelection;
+
+    public bool CanMoveDuplicateFiles => IsBusy is false && HasDuplicateSelection;
+
+    private IEnumerable<DuplicateFileItemViewModel> DuplicateFileList =>
+        DuplicateGroups.SelectMany(group => group.Files);
+
     protected override async Task OnNavigatedToAsync() => await RefreshAsync().ConfigureAwait(true);
 
     protected override void OnLanguageChanged()
@@ -257,6 +324,8 @@ public sealed partial class StorageViewModel : ViewModelBase
         }
 
         var minimum = LargeFileMinimum.Bytes;
+        _largeFileRoots = roots;
+        _largeFileMinimumBytes = minimum;
 
         var progress = new Progress<StorageScanProgress>(item => SetProgress(
             item.PercentComplete,
@@ -273,19 +342,7 @@ public sealed partial class StorageViewModel : ViewModelBase
             return;
         }
 
-        LargeFiles.Clear();
-        foreach (var file in found)
-        {
-            LargeFiles.Add(new LargeFileItemViewModel(file, Localizer));
-        }
-
-        HasLargeFiles = LargeFiles.Count > 0;
-        LargeFileSummaryText = Localizer.Format(
-            "Storage.Large.Summary",
-            LargeFiles.Count,
-            Humanize.Bytes(found.Sum(file => file.SizeBytes)),
-            Humanize.Bytes(minimum));
-
+        PopulateLargeFiles(found);
         SetStatus("Storage.Large.Done", Severity.Ok);
     }
 
@@ -300,13 +357,14 @@ public sealed partial class StorageViewModel : ViewModelBase
         }
 
         var minimum = DuplicateMinimum.Bytes;
-        var lastReport = 0;
+        _duplicateRoots = roots;
+        _duplicateMinimumBytes = minimum;
 
-        var progress = new Progress<DuplicateScanProgress>(item =>
-        {
-            lastReport = item.FilesHashed;
-            SetProgress(0, "Storage.Duplicates.Progress", item.FilesHashed, item.GroupsFound);
-        });
+        var progress = new Progress<DuplicateScanProgress>(item => SetProgress(
+            0,
+            "Storage.Duplicates.Progress",
+            item.FilesHashed,
+            item.GroupsFound));
 
         var (ok, result) = await RunAsync<DuplicateScanResult>(
             token => _duplicateFinder.FindAsync(roots, minimum, progress, token),
@@ -317,19 +375,8 @@ public sealed partial class StorageViewModel : ViewModelBase
             return;
         }
 
-        DuplicateGroups.Clear();
-        foreach (var group in result.Groups)
-        {
-            DuplicateGroups.Add(new DuplicateGroupItemViewModel(group, Localizer));
-        }
-
-        HasDuplicates = DuplicateGroups.Count > 0;
-        DuplicateSummaryText = Localizer.Format(
-            "Storage.Duplicates.Summary",
-            result.Groups.Count,
-            result.ScannedFiles,
-            Humanize.Bytes(minimum));
-        DuplicateWastedText = Localizer.Format("Storage.Duplicates.Wasted", Humanize.Bytes(result.TotalWastedBytes));
+        _duplicateScannedFiles = result.ScannedFiles;
+        PopulateDuplicateGroups(result.Groups);
 
         if (result.WasCancelled)
         {
@@ -426,6 +473,321 @@ public sealed partial class StorageViewModel : ViewModelBase
             Logger.Warning("Storage", "Nao foi possivel copiar o caminho: " + exception.Message);
             await _dialogs.ShowWarningAsync("Storage.Path.Copy.Title", "Storage.Path.Copy.Failed", path).ConfigureAwait(true);
         }
+    }
+
+    [RelayCommand]
+    private void SelectAllLargeFiles() => SelectLargeFiles(true);
+
+    [RelayCommand]
+    private void ClearLargeFilesSelection() => SelectLargeFiles(false);
+
+    [RelayCommand]
+    private void SelectAllDuplicateFiles() => SelectDuplicateFiles(true);
+
+    [RelayCommand]
+    private void ClearDuplicateFilesSelection() => SelectDuplicateFiles(false);
+
+    [RelayCommand(CanExecute = nameof(CanMoveLargeFiles))]
+    private Task MoveLargeFilesToRecycleBinAsync()
+    {
+        var selection = LargeFiles
+            .Where(file => file.IsSelected)
+            .Select(file => new SelectedFile(file.FullPath, file.SizeBytes))
+            .ToList();
+
+        return MoveSelectedAsync(selection, _largeFileRoots);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanMoveDuplicateFiles))]
+    private Task MoveDuplicateFilesToRecycleBinAsync()
+    {
+        var selection = DuplicateFileList
+            .Where(file => file.IsSelected)
+            .Select(file => new SelectedFile(file.FullPath, file.Model.SizeBytes))
+            .ToList();
+
+        return MoveSelectedAsync(selection, _duplicateRoots);
+    }
+
+    private void SelectLargeFiles(bool selected)
+    {
+        _isUpdatingSelection = true;
+        try
+        {
+            foreach (var file in LargeFiles)
+            {
+                file.IsSelected = selected && file.IsAvailable;
+            }
+        }
+        finally
+        {
+            _isUpdatingSelection = false;
+        }
+
+        RefreshSelectionDerived();
+    }
+
+    private void SelectDuplicateFiles(bool selected)
+    {
+        _isUpdatingSelection = true;
+        try
+        {
+            foreach (var file in DuplicateFileList)
+            {
+                file.IsSelected = selected && file.IsAvailable;
+            }
+        }
+        finally
+        {
+            _isUpdatingSelection = false;
+        }
+
+        RefreshSelectionDerived();
+    }
+
+    private async Task MoveSelectedAsync(IReadOnlyList<SelectedFile> selection, IReadOnlyList<string> roots)
+    {
+        if (selection.Count == 0 || IsBusy)
+        {
+            return;
+        }
+
+        var totalBytes = selection.Sum(item => item.SizeBytes);
+
+        var confirmed = await _dialogs
+            .ConfirmActionAsync(
+                "Storage.Selection.Confirm.Title",
+                "Storage.Selection.Confirm.Message",
+                "Storage.Selection.Action",
+                Localizer.Format("Storage.Selection.Confirm.Detail", selection.Count, Humanize.Bytes(totalBytes)),
+                DialogKind.Warning)
+            .ConfigureAwait(true);
+
+        if (confirmed is false)
+        {
+            return;
+        }
+
+        var paths = selection.Select(item => item.Path).ToList();
+
+        var progress = new Progress<StorageScanProgress>(item => SetProgress(
+            item.PercentComplete,
+            "Storage.Selection.Progress",
+            item.FilesProcessed,
+            paths.Count));
+
+        var (ok, result) = await RunAsync<FileMoveResult>(
+            token => _recycleBin.MoveToRecycleBinAsync(paths, roots, progress, token),
+            "Storage.Selection.Preparing").ConfigureAwait(true);
+
+        if (ok is false || result is null)
+        {
+            return;
+        }
+
+        ApplyMoveResult(result);
+        await ReportMoveAsync(result).ConfigureAwait(true);
+    }
+
+    private void ApplyMoveResult(FileMoveResult result)
+    {
+        var moved = result.MovedFiles
+            .Select(outcome => outcome.Path)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (moved.Count > 0)
+        {
+            RemoveMovedLargeFiles(moved);
+            RemoveMovedDuplicates(moved);
+        }
+
+        RefreshSelectionDerived();
+    }
+
+    private void RemoveMovedLargeFiles(HashSet<string> moved)
+    {
+        if (LargeFiles.Any(file => moved.Contains(file.FullPath)) is false)
+        {
+            return;
+        }
+
+        var remaining = LargeFiles
+            .Where(file => moved.Contains(file.FullPath) is false)
+            .Select(file => file.Model)
+            .ToList();
+
+        PopulateLargeFiles(remaining);
+    }
+
+    private void RemoveMovedDuplicates(HashSet<string> moved)
+    {
+        if (DuplicateFileList.Any(file => moved.Contains(file.FullPath)) is false)
+        {
+            return;
+        }
+
+        var remaining = new List<DuplicateGroup>();
+        foreach (var group in DuplicateGroups)
+        {
+            var files = group.Model.Files
+                .Where(file => moved.Contains(file.FullPath) is false)
+                .ToList();
+
+            if (files.Count < 2)
+            {
+                continue;
+            }
+
+            remaining.Add(new DuplicateGroup
+            {
+                Hash = group.Model.Hash,
+                Extension = group.Model.Extension,
+                FileSizeBytes = group.Model.FileSizeBytes,
+                Files = files
+            });
+        }
+
+        PopulateDuplicateGroups(remaining);
+    }
+
+    private void PopulateLargeFiles(IReadOnlyList<LargeFileInfo> files)
+    {
+        LargeFiles.Clear();
+        foreach (var file in files)
+        {
+            var item = new LargeFileItemViewModel(file, Authorize(file.FullPath, _largeFileRoots), Localizer);
+            item.PropertyChanged += OnLargeFilePropertyChanged;
+            LargeFiles.Add(item);
+        }
+
+        HasLargeFiles = LargeFiles.Count > 0;
+        LargeFileSummaryText = Localizer.Format(
+            "Storage.Large.Summary",
+            LargeFiles.Count,
+            Humanize.Bytes(LargeFiles.Sum(file => file.SizeBytes)),
+            Humanize.Bytes(_largeFileMinimumBytes));
+
+        RefreshSelectionDerived();
+    }
+
+    private void PopulateDuplicateGroups(IReadOnlyList<DuplicateGroup> groups)
+    {
+        DuplicateGroups.Clear();
+        foreach (var group in groups)
+        {
+            var item = new DuplicateGroupItemViewModel(group, path => Authorize(path, _duplicateRoots), Localizer);
+            foreach (var file in item.Files)
+            {
+                file.PropertyChanged += OnDuplicateFilePropertyChanged;
+            }
+
+            DuplicateGroups.Add(item);
+        }
+
+        HasDuplicates = DuplicateGroups.Count > 0;
+        DuplicateSummaryText = Localizer.Format(
+            "Storage.Duplicates.Summary",
+            DuplicateGroups.Count,
+            _duplicateScannedFiles,
+            Humanize.Bytes(_duplicateMinimumBytes));
+        DuplicateWastedText = Localizer.Format(
+            "Storage.Duplicates.Wasted",
+            Humanize.Bytes(DuplicateGroups.Sum(group => group.WastedBytes)));
+
+        RefreshSelectionDerived();
+    }
+
+    private FileAvailability Authorize(string path, IReadOnlyList<string> roots) =>
+        RecycleBinGuard.TryAuthorize(path, roots, _validator, out _, out var reasonKey)
+            ? FileAvailability.Allow()
+            : FileAvailability.Block(reasonKey);
+
+    private void OnLargeFilePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_isUpdatingSelection is false && e.PropertyName == nameof(LargeFileItemViewModel.IsSelected))
+        {
+            RefreshSelectionDerived();
+        }
+    }
+
+    private void OnDuplicateFilePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_isUpdatingSelection is false && e.PropertyName == nameof(DuplicateFileItemViewModel.IsSelected))
+        {
+            RefreshSelectionDerived();
+        }
+    }
+
+    private void RefreshSelectionDerived()
+    {
+        OnPropertyChanged(nameof(LargeFileSelectionText));
+        OnPropertyChanged(nameof(LargeFileSelectedSizeText));
+        OnPropertyChanged(nameof(LargeFileSelectedCount));
+        OnPropertyChanged(nameof(LargeFileSelectedBytes));
+        OnPropertyChanged(nameof(HasLargeFileSelection));
+        OnPropertyChanged(nameof(LargeFileBlockedCount));
+        OnPropertyChanged(nameof(HasLargeFileBlocked));
+        OnPropertyChanged(nameof(LargeFileBlockedNote));
+        OnPropertyChanged(nameof(DuplicateSelectionText));
+        OnPropertyChanged(nameof(DuplicateSelectedSizeText));
+        OnPropertyChanged(nameof(DuplicateFileCount));
+        OnPropertyChanged(nameof(DuplicateSelectedCount));
+        OnPropertyChanged(nameof(DuplicateSelectedBytes));
+        OnPropertyChanged(nameof(HasDuplicateSelection));
+        OnPropertyChanged(nameof(DuplicateBlockedCount));
+        OnPropertyChanged(nameof(HasDuplicateBlocked));
+        OnPropertyChanged(nameof(DuplicateBlockedNote));
+        OnPropertyChanged(nameof(CanMoveLargeFiles));
+        OnPropertyChanged(nameof(CanMoveDuplicateFiles));
+
+        MoveLargeFilesToRecycleBinCommand.NotifyCanExecuteChanged();
+        MoveDuplicateFilesToRecycleBinCommand.NotifyCanExecuteChanged();
+    }
+
+    private async Task ReportMoveAsync(FileMoveResult result)
+    {
+        if (result.MovedCount == 0)
+        {
+            SetStatus("Storage.Selection.Failed.Status", Severity.Warning);
+            await _dialogs
+                .ShowWarningAsync("Storage.Selection.Title", "Storage.Selection.Failed.Message", BuildFailureDetail(result))
+                .ConfigureAwait(true);
+            return;
+        }
+
+        var failures = result.BlockedCount + result.FailedCount;
+        if (failures > 0)
+        {
+            SetStatusFormat("Storage.Selection.Partial.Status", Severity.Warning, result.MovedCount, failures);
+            await _dialogs
+                .ShowWarningAsync("Storage.Selection.Title", "Storage.Selection.Partial.Message", BuildFailureDetail(result))
+                .ConfigureAwait(true);
+            return;
+        }
+
+        SetStatusFormat("Storage.Selection.Done.Status", Severity.Ok, result.MovedCount, Humanize.Bytes(result.MovedBytes));
+
+        await _dialogs
+            .ShowSuccessAsync(
+                "Storage.Selection.Title",
+                "Storage.Selection.Done.Message",
+                Localizer.Format("Storage.Selection.Result.Detail", result.MovedCount, Humanize.Bytes(result.MovedBytes)))
+            .ConfigureAwait(true);
+    }
+
+    private string BuildFailureDetail(FileMoveResult result)
+    {
+        var reasons = result.BlockedFiles
+            .Concat(result.FailedFiles)
+            .Select(outcome => Localizer[outcome.ReasonKey])
+            .Where(text => string.IsNullOrWhiteSpace(text) is false)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(3)
+            .ToList();
+
+        return reasons.Count == 0
+            ? Localizer["Storage.Selection.Failed.Message"]
+            : string.Join(" ", reasons);
     }
 
     private async Task ReportMaintenanceAsync(VolumeMaintenanceResult result, string successKey)
@@ -615,6 +977,22 @@ public sealed partial class StorageViewModel : ViewModelBase
         OnPropertyChanged(nameof(DevicesEmptyText));
         OnPropertyChanged(nameof(StorageDisclaimer));
         OnPropertyChanged(nameof(MinimumSizeLabel));
+        OnPropertyChanged(nameof(SelectAllText));
+        OnPropertyChanged(nameof(ClearSelectionText));
+        OnPropertyChanged(nameof(MoveToRecycleBinText));
+        OnPropertyChanged(nameof(SelectionNote));
+
+        foreach (var file in LargeFiles)
+        {
+            file.Refresh();
+        }
+
+        foreach (var file in DuplicateFileList)
+        {
+            file.Refresh();
+        }
+
+        RefreshSelectionDerived();
     }
 
     partial void OnSelectedVolumeChanged(VolumeItemViewModel? value)
@@ -635,6 +1013,9 @@ public sealed partial class StorageViewModel : ViewModelBase
 
         public string Text => Humanize.Bytes(Bytes);
     }
+
+    /// <summary>Arquivo marcado pelo usuario, com o tamanho usado no resumo da confirmacao.</summary>
+    private readonly record struct SelectedFile(string Path, long SizeBytes);
 
     /// <summary>Unidade incluida na varredura; o usuario escolhe o que analisar.</summary>
     public sealed class RootOption : ObservableObject

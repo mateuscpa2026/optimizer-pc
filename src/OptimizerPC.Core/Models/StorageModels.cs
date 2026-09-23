@@ -130,6 +130,63 @@ public readonly record struct DuplicateScanProgress(
     int GroupsFound,
     string CurrentPath);
 
+/// <summary>
+/// Resultado do envio de um arquivo para a Lixeira.
+/// <see cref="WasBlocked"/> indica que o proprio aplicativo recusou a operacao;
+/// quando falso e <see cref="Moved"/> tambem e falso, o Windows recusou.
+/// </summary>
+public sealed class FileMoveOutcome
+{
+    public string Path { get; init; } = string.Empty;
+    public long SizeBytes { get; init; }
+    public bool Moved { get; init; }
+    public bool WasBlocked { get; init; }
+    public string ReasonKey { get; init; } = string.Empty;
+
+    public string FileName
+    {
+        get
+        {
+            try
+            {
+                return System.IO.Path.GetFileName(Path);
+            }
+            catch (Exception)
+            {
+                return Path;
+            }
+        }
+    }
+}
+
+/// <summary>Resultado consolidado do envio de arquivos para a Lixeira.</summary>
+public sealed class FileMoveResult
+{
+    public IReadOnlyList<FileMoveOutcome> Outcomes { get; init; } = Array.Empty<FileMoveOutcome>();
+
+    public bool WasCancelled { get; init; }
+
+    public IReadOnlyList<FileMoveOutcome> MovedFiles { get; init; } = Array.Empty<FileMoveOutcome>();
+
+    public IReadOnlyList<FileMoveOutcome> BlockedFiles { get; init; } = Array.Empty<FileMoveOutcome>();
+
+    public IReadOnlyList<FileMoveOutcome> FailedFiles { get; init; } = Array.Empty<FileMoveOutcome>();
+
+    public long MovedBytes { get; init; }
+
+    public int MovedCount => MovedFiles.Count;
+
+    public int BlockedCount => BlockedFiles.Count;
+
+    public int FailedCount => FailedFiles.Count;
+
+    public bool HasAnyMoved => MovedCount > 0;
+
+    public bool HasAnyBlocked => BlockedCount > 0;
+
+    public bool HasAnyFailed => FailedCount > 0;
+}
+
 public sealed class InstalledGame
 {
     public string Name { get; init; } = string.Empty;

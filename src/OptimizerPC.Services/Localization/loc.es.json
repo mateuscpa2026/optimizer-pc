@@ -165,6 +165,10 @@
   "Risk.Critical": "Crítico",
   "Score.Disclaimer": "La puntuación de salud es una estimación interna de Optimizer PC, calculada a partir de los datos recopilados localmente. No es un diagnóstico científico ni sustituye las herramientas oficiales de Windows.",
 
+  "Storage.Selection.Action": "Mover a la Papelera",
+  "Storage.Selection.History": "{0} archivo(s) movido(s) a la Papelera ({1}).",
+  "Storage.Selection.History.Result": "Completado",
+
   "Schedule.Error.NothingSelected": "Seleccione al menos una acción para el mantenimiento automático.",
   "Schedule.Error.NoExecutable": "No fue posible identificar el ejecutable de la aplicación para programar la tarea.",
   "Schedule.Error.InvalidTime": "Introduzca una hora válida en formato HH:mm.",

@@ -304,7 +304,7 @@
                                                         <ToggleButton Style="{StaticResource Nav.Item}"
                                                                       IsChecked="{Binding IsSelected, Mode=OneWay}"
                                                                       Command="{Binding SelectCommand}"
-                                                                      Content="{Binding Title}"
+                                                                      Content="{Binding}"
                                                                       ToolTip="{Binding Title}">
                                                             <ToggleButton.ContentTemplate>
                                                                 <DataTemplate>
@@ -320,7 +320,7 @@
                                                                               Stretch="Uniform"
                                                                               Width="17" Height="17"
                                                                               VerticalAlignment="Center"
-                                                                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
+                                                                              Stroke="{DynamicResource Brush.Text.Primary}"
                                                                               StrokeThickness="1.7"
                                                                               StrokeLineJoin="Round"
                                                                               StrokeStartLineCap="Round"
@@ -328,6 +328,7 @@
 
                                                                         <TextBlock Grid.Column="1"
                                                                                    Text="{Binding Title}"
+                                                                                   Foreground="{DynamicResource Brush.Text.Primary}"
                                                                                    Margin="12,0,0,0"
                                                                                    VerticalAlignment="Center"
                                                                                    TextTrimming="CharacterEllipsis"

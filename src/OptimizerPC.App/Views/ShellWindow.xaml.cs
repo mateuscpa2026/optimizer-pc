@@ -20,6 +20,8 @@ public partial class ShellWindow : Window
     private readonly ITrayService _tray;
     private readonly ILocalizer _localizer;
     private bool _shutdownConfirmed;
+    private bool _isClosing;
+    private bool _isClosed;
 
     public ShellWindow(ShellViewModel viewModel, ITrayService tray, ILocalizer localizer)
     {
@@ -59,6 +61,13 @@ public partial class ShellWindow : Window
         _viewModel.RequestShutdown();
         _tray.Hide();
 
+        // Se ja estamos dentro de OnClosing, nao chamamos Close() de novo (lançaria
+        // InvalidOperationException); o fechamento natural prossegue e o OnClosed desliga.
+        if (_isClosing)
+        {
+            return;
+        }
+
         Close();
         Application.Current?.Shutdown();
     }
@@ -66,6 +75,11 @@ public partial class ShellWindow : Window
     /// <summary>Sobe a janela para o primeiro plano, restaurando o estado minimizado.</summary>
     public void BringToFront()
     {
+        if (_isClosed)
+        {
+            return;
+        }
+
         if (WindowState == WindowState.Minimized)
         {
             WindowState = WindowState.Normal;
@@ -88,9 +102,13 @@ public partial class ShellWindow : Window
         }
 
         // O botao fechar encerra tudo: nao ha mais "minimizar para a bandeja" aqui.
-        // Cancelamos o fechamento padrao apenas para executar a saida completa.
-        e.Cancel = true;
-        RequestExit();
+        // Marcamos a saida, limpamos bandeja/monitoramento e deixamos o fechamento
+        // natural prosseguir; o OnClosed faz o Shutdown do Application.
+        _isClosing = true;
+        _shutdownConfirmed = true;
+        _viewModel.RequestShutdown();
+        _tray.Hide();
+        e.Cancel = false;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -102,6 +120,8 @@ public partial class ShellWindow : Window
 
     private void OnClosed(object? sender, EventArgs e)
     {
+        _isClosed = true;
+
         _tray.OpenRequested -= OnTrayOpenRequested;
         _tray.ExitRequested -= OnTrayExitRequested;
         StateChanged -= OnStateChanged;
@@ -110,6 +130,10 @@ public partial class ShellWindow : Window
         Closed -= OnClosed;
         _tray.Dispose();
         ViewModel.Dispose();
+
+        // Garante que o processo termine de fato (ShutdownMode e OnExplicitShutdown),
+        // liberando o mutex de instancia unica para uma reabertura limpa.
+        Application.Current?.Shutdown();
     }
 
     private void OnStateChanged(object? sender, EventArgs e) => UpdateMaximizeIcon();

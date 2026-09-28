@@ -934,11 +934,6 @@
         </Setter>
     </Style>
 
-    <Style x:Key="ProgressBar.Thin" TargetType="ProgressBar">
-        <Setter Property="Height" Value="6" />
-        <Setter Property="Width" Value="Auto" />
-    </Style>
-
     <Style TargetType="ProgressBar">
         <Setter Property="Height" Value="10" />
         <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}" />
@@ -984,6 +979,11 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style x:Key="ProgressBar.Thin" TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
+        <Setter Property="Height" Value="6" />
+        <Setter Property="Width" Value="Auto" />
     </Style>
 
     <Style TargetType="Slider">

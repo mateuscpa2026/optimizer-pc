@@ -360,8 +360,7 @@ public sealed partial class StorageViewModel : ViewModelBase
         _duplicateRoots = roots;
         _duplicateMinimumBytes = minimum;
 
-        var progress = new Progress<DuplicateScanProgress>(item => SetProgress(
-            0,
+        var progress = new Progress<DuplicateScanProgress>(item => SetIndeterminateProgress(
             "Storage.Duplicates.Progress",
             item.FilesHashed,
             item.GroupsFound));

@@ -130,6 +130,11 @@ public abstract partial class ViewModelBase : ObservableObject, IDisposable
         ErrorKey = null;
         BusyText = string.IsNullOrEmpty(busyTextKey) ? string.Empty : Localizer[busyTextKey];
 
+        // A barra comeca animada (indeterminada): assim toda operacao ocupada mostra
+        // atividade de imediato. Quando o servico reporta uma porcentagem real,
+        // SetProgress a troca por uma barra deterministica.
+        IsProgressIndeterminate = true;
+
         try
         {
             await work(linked.Token).ConfigureAwait(true);
@@ -176,6 +181,23 @@ public abstract partial class ViewModelBase : ObservableObject, IDisposable
     {
         IsProgressIndeterminate = false;
         ProgressPercent = percent;
+
+        if (string.IsNullOrEmpty(textKey))
+        {
+            return;
+        }
+
+        BusyText = args.Length == 0 ? Localizer[textKey] : Localizer.Format(textKey, args);
+    }
+
+    /// <summary>
+    /// Mantem a barra animada (sem porcentagem) atualizando apenas o texto. Usado por
+    /// operacoes que nao tem um total conhecido, como a busca de arquivos duplicados
+    /// (o progresso e medido em arquivos hashados, nao em uma porcentagem estavel).
+    /// </summary>
+    protected void SetIndeterminateProgress(string? textKey = null, params object[] args)
+    {
+        IsProgressIndeterminate = true;
 
         if (string.IsNullOrEmpty(textKey))
         {

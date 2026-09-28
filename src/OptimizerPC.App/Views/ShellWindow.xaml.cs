@@ -1,5 +1,7 @@
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
 using OptimizerPC.App.Services;
 using OptimizerPC.App.ViewModels;
@@ -193,4 +195,95 @@ public partial class ShellWindow : Window
         => WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
 
     private void OnCloseClick(object sender, RoutedEventArgs e) => Close();
+
+    // Janela borderless maximizada (WindowStyle=None + WindowChrome) transborda a
+    // area de trabalho: cobre a barra de tarefas e corta ~7px das bordas. Este
+    // handler restringe o tamanho/posicao maximizados ao work area do monitor.
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+
+        if (PresentationSource.FromVisual(this) is HwndSource source)
+        {
+            source.AddHook(WndProc);
+        }
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_GETMINMAXINFO)
+        {
+            ApplyMaxSizeToWorkArea(hwnd, lParam);
+            handled = true;
+        }
+
+        return IntPtr.Zero;
+    }
+
+    private static void ApplyMaxSizeToWorkArea(IntPtr hwnd, IntPtr lParam)
+    {
+        var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
+        var monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+
+        if (monitor != IntPtr.Zero)
+        {
+            var info = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
+
+            if (GetMonitorInfo(monitor, ref info))
+            {
+                var work = info.rcWork;
+                var full = info.rcMonitor;
+                mmi.ptMaxPosition.x = work.left - full.left;
+                mmi.ptMaxPosition.y = work.top - full.top;
+                mmi.ptMaxSize.x = work.right - work.left;
+                mmi.ptMaxSize.y = work.bottom - work.top;
+            }
+        }
+
+        Marshal.StructureToPtr(mmi, lParam, true);
+    }
+
+    private const int WM_GETMINMAXINFO = 0x0024;
+    private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int x;
+        public int y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MINMAXINFO
+    {
+        public POINT ptReserved;
+        public POINT ptMaxSize;
+        public POINT ptMaxPosition;
+        public POINT ptMinTrackSize;
+        public POINT ptMaxTrackSize;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int left;
+        public int top;
+        public int right;
+        public int bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MONITORINFO
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public int dwFlags;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
 }

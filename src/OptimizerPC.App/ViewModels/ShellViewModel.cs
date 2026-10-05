@@ -148,6 +148,16 @@ public sealed partial class ShellViewModel : ViewModelBase
 
         _monitoring.Interval = TimeSpan.FromMilliseconds(_settings.Current.MonitoringIntervalOrDefault);
         SubscribeMonitoring();
+
+        // O monitoramento sobe aqui, antes de qualquer leitura que possa demorar: assim
+        // as metricas ao vivo (CPU/memoria/disco) comecam a chegar mesmo que uma tela
+        // ainda esteja carregando os dados dela.
+        if (_monitoring.IsRunning is false)
+        {
+            _monitoring.Start();
+            IsMonitoring = true;
+        }
+
         await LoadNotificationsAsync().ConfigureAwait(true);
         await _navigation.NavigateAsync(Screen.Dashboard).ConfigureAwait(true);
     }

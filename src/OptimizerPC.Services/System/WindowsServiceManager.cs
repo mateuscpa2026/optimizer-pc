@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using OptimizerPC.Core;
 using OptimizerPC.Core.Abstractions;
@@ -21,9 +22,11 @@ public sealed class WindowsServiceManager : IServiceManager
     private const string DelayedValue = "DelayedAutostart";
     private const string ImagePathValue = "ImagePath";
     private const string TypeValue = "Type";
+    private const string DescriptionValue = "Description";
 
     private const int InitialBufferSize = 64 * 1024;
     private const int StartStopTimeoutMilliseconds = 15000;
+    private const int ScmEnumerationTimeoutMs = 5000;
 
     private readonly IRegistryService _registry;
     private readonly IRestoreService _restore;
@@ -52,13 +55,122 @@ public sealed class WindowsServiceManager : IServiceManager
 
     private IReadOnlyList<WindowsServiceInfo> ReadServices(CancellationToken cancellationToken)
     {
+        // O SCM pode nao responder (servico travado, gerenciador danificado). A enumeracao
+        // roda com tempo limite; sem resposta, cai para a listagem do registro, que informa
+        // tudo exceto o estado ao vivo, em vez de travar a tela inteira.
+        var task = Task.Run(() => EnumerateFromScm(cancellationToken), cancellationToken);
+
+        List<ScmEntry>? enumerated = null;
+        try
+        {
+            if (task.Wait(ScmEnumerationTimeoutMs))
+            {
+                enumerated = task.Result;
+            }
+        }
+        catch (Exception exception)
+        {
+            var inner = exception is AggregateException aggregate && aggregate.InnerException is not null
+                ? aggregate.InnerException
+                : exception;
+            _logger.Warning("Services", "Falha ao enumerar os servicos pelo gerenciador.", inner);
+        }
+
+        if (enumerated is null)
+        {
+            _logger.Warning(
+                "Services",
+                "O gerenciador de servicos nao respondeu a tempo; a lista usa apenas o registro, sem o estado ao vivo.");
+            return ReadServicesFromRegistry(cancellationToken);
+        }
+
+        var services = new List<WindowsServiceInfo>(enumerated.Count);
+        foreach (var entry in enumerated)
+        {
+            services.Add(Describe(entry.Name, entry.DisplayName, entry.Status));
+        }
+
+        return Sort(services);
+    }
+
+    private static IReadOnlyList<WindowsServiceInfo> Sort(List<WindowsServiceInfo> services) => services
+        .OrderByDescending(s => s.State == WindowsServiceState.Running)
+        .ThenBy(s => s.DisplayName, StringComparer.CurrentCultureIgnoreCase)
+        .ToArray();
+
+    /// <summary>
+    /// Lista de reserva lida somente do registro: nomes, modo de inicio, caminho e descricao.
+    /// O estado ao vivo fica como desconhecido, porque so o SCM o informa.
+    /// </summary>
+    private IReadOnlyList<WindowsServiceInfo> ReadServicesFromRegistry(CancellationToken cancellationToken)
+    {
         var services = new List<WindowsServiceInfo>();
+
+        try
+        {
+            using var root = Registry.LocalMachine.OpenSubKey(ServicesRoot);
+            if (root is null)
+            {
+                return services;
+            }
+
+            foreach (var name in root.GetSubKeyNames())
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                var subKey = ServicesRoot + name;
+                var serviceType = ReadInt(subKey, TypeValue) ?? 0;
+
+                // Somente servicos Win32 (bits 0x10/0x20); drivers de kernel ficam de fora,
+                // como na enumeracao pelo SCM.
+                if ((serviceType & (int)NativeServices.SERVICE_WIN32) == 0)
+                {
+                    continue;
+                }
+
+                var start = ReadInt(subKey, StartValue);
+                var delayed = ReadInt(subKey, DelayedValue);
+                var imagePath = ReadString(subKey, ImagePathValue);
+                var isDriver = ServiceSafety.IsKernelDriver((uint)serviceType);
+
+                services.Add(new WindowsServiceInfo
+                {
+                    Name = name,
+                    DisplayName = name,
+                    Description = ReadDescription(subKey),
+                    State = WindowsServiceState.Unknown,
+                    StartMode = MapStartMode(start, delayed),
+                    ProcessId = 0,
+                    ExecutablePath = ExpandPath(imagePath),
+                    IsSystemCritical = ServiceSafety.IsProtected(name) || isDriver,
+                    CanStop = false,
+                    IsMicrosoft = IsWindowsComponent(imagePath)
+                });
+            }
+        }
+        catch (Exception exception)
+        {
+            _logger.Warning("Services", "Falha ao listar os servicos pelo registro.", exception);
+        }
+
+        return Sort(services);
+    }
+
+    private sealed record ScmEntry(string Name, string DisplayName, SERVICE_STATUS_PROCESS Status);
+
+    /// <summary>Devolve nulo quando o SCM nao abre ou a enumeracao falha.</summary>
+    private List<ScmEntry>? EnumerateFromScm(CancellationToken cancellationToken)
+    {
+        var entries = new List<ScmEntry>();
 
         using var manager = NativeServices.OpenSCManager(null, null, NativeServices.SC_MANAGER_CONNECT | NativeServices.SC_MANAGER_ENUMERATE_SERVICE);
         if (manager.IsInvalid)
         {
             _logger.Warning("Services", "Nao foi possivel abrir o gerenciador de servicos.", null);
-            return services;
+            return null;
         }
 
         var bufferSize = InitialBufferSize;
@@ -112,26 +224,24 @@ public sealed class WindowsServiceManager : IServiceManager
                         continue;
                     }
 
-                    services.Add(Describe(manager, name, entry.DisplayName ?? name, entry.ServiceStatusProcess));
+                    entries.Add(new ScmEntry(name, entry.DisplayName ?? name, entry.ServiceStatusProcess));
                 }
             }
         }
         catch (Exception exception)
         {
             _logger.Warning("Services", "Falha ao enumerar os servicos do Windows.", exception);
+            return null;
         }
         finally
         {
             Marshal.FreeHGlobal(buffer);
         }
 
-        return services
-            .OrderByDescending(s => s.State == WindowsServiceState.Running)
-            .ThenBy(s => s.DisplayName, StringComparer.CurrentCultureIgnoreCase)
-            .ToArray();
+        return entries;
     }
 
-    private WindowsServiceInfo Describe(SafeWaitHandle manager, string name, string displayName, SERVICE_STATUS_PROCESS status)
+    private WindowsServiceInfo Describe(string name, string displayName, SERVICE_STATUS_PROCESS status)
     {
         var subKey = ServicesRoot + name;
         var start = ReadInt(subKey, StartValue);
@@ -148,7 +258,7 @@ public sealed class WindowsServiceManager : IServiceManager
         {
             Name = name,
             DisplayName = string.IsNullOrWhiteSpace(displayName) ? name : displayName,
-            Description = ReadDescription(manager, name),
+            Description = ReadDescription(subKey),
             State = state,
             StartMode = startMode,
             ProcessId = (int)status.ProcessId,
@@ -442,34 +552,20 @@ public sealed class WindowsServiceManager : IServiceManager
         }
     }
 
-    private string ReadDescription(SafeWaitHandle manager, string name)
+    /// <summary>
+    /// A descricao e lida direto do registro (a mesma origem que o SCM consulta). Abrir o
+    /// servico no SCM para cada entrada seria uma chamada RPC por servico: alem de lenta,
+    /// um unico servico que nao responde travaria a enumeracao inteira.
+    /// </summary>
+    private string ReadDescription(string subKey)
     {
-        using var handle = NativeServices.OpenService(manager, name, NativeServices.SERVICE_QUERY_CONFIG);
-        if (handle.IsInvalid)
-        {
-            return string.Empty;
-        }
-
-        const int size = 4096;
-        var buffer = Marshal.AllocHGlobal(size);
-
         try
         {
-            if (NativeServices.QueryServiceConfig2(handle, NativeServices.SERVICE_CONFIG_DESCRIPTION, buffer, size, out _) is false)
-            {
-                return string.Empty;
-            }
-
-            var description = Marshal.PtrToStructure<NativeServices.SERVICE_DESCRIPTION>(buffer).Description;
-            return description?.Trim() ?? string.Empty;
+            return ReadString(subKey, DescriptionValue)?.Trim() ?? string.Empty;
         }
         catch (Exception)
         {
             return string.Empty;
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(buffer);
         }
     }
 

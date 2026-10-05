@@ -14,6 +14,9 @@ namespace OptimizerPC.Services.System;
 /// </summary>
 public sealed class SystemInfoService : ISystemInfoService
 {
+    private const int FastReadTimeoutMs = 2000;
+    private const int StorageReadTimeoutMs = 5000;
+
     private readonly IAppLogger _logger;
 
     public SystemInfoService(IAppLogger logger)
@@ -28,13 +31,29 @@ public sealed class SystemInfoService : ISystemInfoService
         // Executa em thread de trabalho: a leitura de SMBIOS e IOCTL nao deve rodar no thread da interface.
         return Task.Run(() =>
         {
-            var os = ReadOs();
-            var cpu = ReadCpu();
-            var memory = ReadMemory();
-            var motherboard = ReadMotherboard();
-            var gpus = ReadGpus();
-            var devices = ReadStorageDevices();
-            var volumes = VolumeEnumerator.GetVolumes();
+            var os = Bounded(() => ReadOs(), new OsInfo(), "versao do sistema", FastReadTimeoutMs);
+            var cpu = Bounded(() => ReadCpu(), new CpuInfo(), "processador", FastReadTimeoutMs);
+            var memory = Bounded(() => ReadMemory(), new MemoryInfo(), "memoria", FastReadTimeoutMs);
+            var motherboard = Bounded(() => ReadMotherboard(), null, "placa-mae", FastReadTimeoutMs);
+            var gpus = Bounded(
+                () => ReadGpus(),
+                (IReadOnlyList<GpuInfo>)Array.Empty<GpuInfo>(),
+                "adaptadores de video",
+                FastReadTimeoutMs);
+
+            // Discos e volumes usam IOCTL/DriveInfo: um disco que nao responde pode
+            // bloquear a chamada para sempre. O limite de tempo garante que o restante
+            // do snapshot seja entregue, marcando essas fontes como indisponiveis.
+            var devices = Bounded(
+                () => ReadStorageDevices(),
+                (IReadOnlyList<StorageDeviceInfo>)Array.Empty<StorageDeviceInfo>(),
+                "discos fisicos",
+                StorageReadTimeoutMs);
+            var volumes = Bounded(
+                () => VolumeEnumerator.GetVolumes(),
+                (IReadOnlyList<VolumeInfo>)Array.Empty<VolumeInfo>(),
+                "volumes",
+                StorageReadTimeoutMs);
 
             return new SystemSnapshot
             {
@@ -48,6 +67,35 @@ public sealed class SystemInfoService : ISystemInfoService
                 CollectedAtUtc = DateTime.UtcNow
             };
         }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Executa uma leitura com limite de tempo. Leituras nativas (IOCTL, SMBIOS, DriveInfo)
+    /// podem bloquear indefinidamente quando um dispositivo nao responde; nesse caso a
+    /// leitura e abandonada em segundo plano e o valor de reserva e usado, sem travar a coleta.
+    /// </summary>
+    private T Bounded<T>(Func<T> read, T fallback, string source, int timeoutMs)
+    {
+        try
+        {
+            var task = Task.Run(read);
+            if (task.Wait(timeoutMs))
+            {
+                return task.Result;
+            }
+
+            _logger.Warning("SystemInfo", "Leitura ignorada por exceder o tempo limite: " + source + ".");
+            return fallback;
+        }
+        catch (Exception exception)
+        {
+            var inner = exception is AggregateException aggregate && aggregate.InnerException is not null
+                ? aggregate.InnerException
+                : exception;
+
+            _logger.Warning("SystemInfo", "Falha ao ler: " + source + ".", inner);
+            return fallback;
+        }
     }
 
     public Task<OsInfo> GetOsInfoAsync(CancellationToken cancellationToken = default)

@@ -159,7 +159,7 @@ public partial class App : Application
         _guard?.ListenToActivationRequests(() =>
             Dispatcher.BeginInvoke(new Action(() => _shell?.BringToFront())));
 
-        await _shell.ViewModel.EnsureInitializedAsync().ConfigureAwait(true);
+        await _shell.ViewModel.NotifyNavigatedToAsync().ConfigureAwait(true);
 
         logger.Info("Startup", "Optimizer PC iniciado. Versao " + _shell.ViewModel.VersionText + ".");
 

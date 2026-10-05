@@ -197,8 +197,10 @@ public partial class ShellWindow : Window
     private void OnCloseClick(object sender, RoutedEventArgs e) => Close();
 
     // Janela borderless maximizada (WindowStyle=None + WindowChrome) transborda a
-    // area de trabalho: cobre a barra de tarefas e corta ~7px das bordas. Este
-    // handler restringe o tamanho/posicao maximizados ao work area do monitor.
+    // area util: corta ~7px das bordas. O app abre em modo tela cheia, cobrindo o
+    // monitor inteiro (inclusive a barra de tarefas), entao este handler restringe
+    // o tamanho/posicao maximizados ao rcMonitor. Os botoes de minimizar/fechar da
+    // barra de titulo continuam visiveis, entao o usuario nunca fica preso.
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
@@ -213,14 +215,14 @@ public partial class ShellWindow : Window
     {
         if (msg == WM_GETMINMAXINFO)
         {
-            ApplyMaxSizeToWorkArea(hwnd, lParam);
+            ApplyMaxSizeToMonitor(hwnd, lParam);
             handled = true;
         }
 
         return IntPtr.Zero;
     }
 
-    private static void ApplyMaxSizeToWorkArea(IntPtr hwnd, IntPtr lParam)
+    private static void ApplyMaxSizeToMonitor(IntPtr hwnd, IntPtr lParam)
     {
         var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
         var monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
@@ -231,12 +233,11 @@ public partial class ShellWindow : Window
 
             if (GetMonitorInfo(monitor, ref info))
             {
-                var work = info.rcWork;
                 var full = info.rcMonitor;
-                mmi.ptMaxPosition.x = work.left - full.left;
-                mmi.ptMaxPosition.y = work.top - full.top;
-                mmi.ptMaxSize.x = work.right - work.left;
-                mmi.ptMaxSize.y = work.bottom - work.top;
+                mmi.ptMaxPosition.x = 0;
+                mmi.ptMaxPosition.y = 0;
+                mmi.ptMaxSize.x = full.right - full.left;
+                mmi.ptMaxSize.y = full.bottom - full.top;
             }
         }
 

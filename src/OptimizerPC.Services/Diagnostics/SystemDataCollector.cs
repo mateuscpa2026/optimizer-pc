@@ -41,6 +41,10 @@ public sealed class SystemData
 /// </summary>
 public sealed class SystemDataCollector
 {
+    // Nenhuma fonte individual pode segurar a coleta para sempre: um disco ou driver
+    // que nao responde seria suficiente para travar o painel inteiro.
+    private const int SourceTimeoutMs = 10000;
+
     private readonly ISystemInfoService _systemInfo;
     private readonly IMetricsProvider _metrics;
     private readonly ICleanupScanner _cleanupScanner;
@@ -78,34 +82,34 @@ public sealed class SystemDataCollector
         IReadOnlyList<CleanupTarget>? cleanupTargets,
         CancellationToken cancellationToken)
     {
-        var snapshot = await TryAsync(() => _systemInfo.GetSnapshotAsync(cancellationToken), "informacoes do sistema")
+        var snapshot = await TryAsync(() => _systemInfo.GetSnapshotAsync(cancellationToken), "informacoes do sistema", cancellationToken)
             .ConfigureAwait(false);
-        var metrics = await TryAsync(() => _metrics.SampleAsync(cancellationToken), "amostra de uso")
+        var metrics = await TryAsync(() => _metrics.SampleAsync(cancellationToken), "amostra de uso", cancellationToken)
             .ConfigureAwait(false);
 
         var volumes = snapshot?.Volumes ?? Array.Empty<VolumeInfo>();
         if (volumes.Count == 0)
         {
-            volumes = await TryAsync(() => _storageAnalyzer.GetVolumesAsync(cancellationToken), "volumes")
+            volumes = await TryAsync(() => _storageAnalyzer.GetVolumesAsync(cancellationToken), "volumes", cancellationToken)
                 .ConfigureAwait(false) ?? Array.Empty<VolumeInfo>();
         }
 
         var driveHealth = options.IncludeDriveHealth
-            ? await TryAsync(() => _driveHealth.GetHealthReportsAsync(cancellationToken), "saude dos discos")
+            ? await TryAsync(() => _driveHealth.GetHealthReportsAsync(cancellationToken), "saude dos discos", cancellationToken)
                 .ConfigureAwait(false) ?? Array.Empty<DeviceHealthReport>()
             : Array.Empty<DeviceHealthReport>();
 
         var startupEntries = options.IncludeStartupAnalysis
-            ? await TryAsync(() => _startup.GetEntriesAsync(cancellationToken), "itens de inicializacao")
+            ? await TryAsync(() => _startup.GetEntriesAsync(cancellationToken), "itens de inicializacao", cancellationToken)
                 .ConfigureAwait(false) ?? Array.Empty<StartupEntry>()
             : Array.Empty<StartupEntry>();
 
         var services = options.IncludeServiceAnalysis
-            ? await TryAsync(() => _services.GetServicesAsync(cancellationToken), "servicos do Windows")
+            ? await TryAsync(() => _services.GetServicesAsync(cancellationToken), "servicos do Windows", cancellationToken)
                 .ConfigureAwait(false) ?? Array.Empty<WindowsServiceInfo>()
             : Array.Empty<WindowsServiceInfo>();
 
-        var processes = await TryAsync(() => _processes.GetProcessesAsync(cancellationToken), "processos")
+        var processes = await TryAsync(() => _processes.GetProcessesAsync(cancellationToken), "processos", cancellationToken)
             .ConfigureAwait(false) ?? Array.Empty<ProcessInfoModel>();
 
         var targets = cleanupTargets;
@@ -113,17 +117,18 @@ public sealed class SystemDataCollector
         {
             targets = await TryAsync(
                     () => _cleanupScanner.ScanAsync(null, true, null, cancellationToken),
-                    "varredura de limpeza")
+                    "varredura de limpeza",
+                    cancellationToken)
                 .ConfigureAwait(false) ?? Array.Empty<CleanupTarget>();
         }
 
-        var recycleBin = await TryAsync(() => _cleanupScanner.GetRecycleBinInfoAsync(cancellationToken), "lixeira")
+        var recycleBin = await TryAsync(() => _cleanupScanner.GetRecycleBinInfoAsync(cancellationToken), "lixeira", cancellationToken)
             .ConfigureAwait(false);
 
         var storageUsage = Array.Empty<StorageCategoryUsage>();
         if (options.IncludeDeepStorageScan)
         {
-            var analysis = await TryAsync(() => _storageAnalyzer.AnalyzeAsync(null, cancellationToken), "analise de armazenamento")
+            var analysis = await TryAsync(() => _storageAnalyzer.AnalyzeAsync(null, cancellationToken), "analise de armazenamento", cancellationToken)
                 .ConfigureAwait(false);
 
             storageUsage = analysis?.Categories.ToArray() ?? Array.Empty<StorageCategoryUsage>();
@@ -144,12 +149,24 @@ public sealed class SystemDataCollector
         };
     }
 
-    private async Task<T?> TryAsync<T>(Func<Task<T>> read, string source)
+    private async Task<T?> TryAsync<T>(Func<Task<T>> read, string source, CancellationToken cancellationToken = default)
         where T : class
     {
         try
         {
-            return await read().ConfigureAwait(false);
+            var task = read();
+            var completed = await Task.WhenAny(task, Task.Delay(SourceTimeoutMs, cancellationToken))
+                .ConfigureAwait(false);
+
+            if (completed != task)
+            {
+                // A leitura ficou pendurada (dispositivo que nao responde). Abandona-a em
+                // segundo plano e segue com as demais fontes em vez de travar a coleta.
+                _logger.Warning("Diagnostics", "Fonte de dados nao respondeu a tempo: " + source + ".");
+                return null;
+            }
+
+            return await task.ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {

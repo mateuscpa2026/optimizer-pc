@@ -33,6 +33,12 @@ public partial class App : Application
 
         RegisterGlobalHandlers();
 
+        // A abertura dispara varias leituras de sistema em paralelo. O minimo padrao do
+        // pool (numero de nucleos) deixa tarefas na fila, e as leituras com tempo limite
+        // expiram antes mesmo de comecar. Um minimo maior evita esse falso timeout.
+        ThreadPool.GetMinThreads(out var minWorkers, out var minIo);
+        ThreadPool.SetMinThreads(Math.Max(minWorkers, 32), Math.Max(minIo, 32));
+
         _isMaintenance = e.Args.Any(argument =>
             string.Equals(argument, MaintenanceArgument, StringComparison.OrdinalIgnoreCase));
 

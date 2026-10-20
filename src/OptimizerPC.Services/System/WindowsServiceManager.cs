@@ -56,25 +56,10 @@ public sealed class WindowsServiceManager : IServiceManager
     private IReadOnlyList<WindowsServiceInfo> ReadServices(CancellationToken cancellationToken)
     {
         // O SCM pode nao responder (servico travado, gerenciador danificado). A enumeracao
-        // roda com tempo limite; sem resposta, cai para a listagem do registro, que informa
-        // tudo exceto o estado ao vivo, em vez de travar a tela inteira.
-        var task = Task.Run(() => EnumerateFromScm(cancellationToken), cancellationToken);
-
-        List<ScmEntry>? enumerated = null;
-        try
-        {
-            if (task.Wait(ScmEnumerationTimeoutMs))
-            {
-                enumerated = task.Result;
-            }
-        }
-        catch (Exception exception)
-        {
-            var inner = exception is AggregateException aggregate && aggregate.InnerException is not null
-                ? aggregate.InnerException
-                : exception;
-            _logger.Warning("Services", "Falha ao enumerar os servicos pelo gerenciador.", inner);
-        }
+        // roda em thread dedicada com tempo limite: o pool pode estar ocupado com as
+        // demais leituras da abertura e atrasar a tarefa, o que gerava falso timeout
+        // mesmo com o SCM saudavel. Sem resposta, cai para a listagem do registro.
+        var enumerated = TryEnumerateFromScm(cancellationToken);
 
         if (enumerated is null)
         {
@@ -91,6 +76,31 @@ public sealed class WindowsServiceManager : IServiceManager
         }
 
         return Sort(services);
+    }
+
+    private List<ScmEntry>? TryEnumerateFromScm(CancellationToken cancellationToken)
+    {
+        List<ScmEntry>? result = null;
+
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                result = EnumerateFromScm(cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                _logger.Warning("Services", "Falha ao enumerar os servicos do Windows.", exception);
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "OptimizerPC.ScmEnumeration"
+        };
+
+        thread.Start();
+
+        return thread.Join(ScmEnumerationTimeoutMs) ? result : null;
     }
 
     private static IReadOnlyList<WindowsServiceInfo> Sort(List<WindowsServiceInfo> services) => services
@@ -225,6 +235,13 @@ public sealed class WindowsServiceManager : IServiceManager
                     }
 
                     entries.Add(new ScmEntry(name, entry.DisplayName ?? name, entry.ServiceStatusProcess));
+                }
+
+                // Sem mais servicos pendentes o SCM zera o resume handle. Sem esta saida,
+                // a chamada seguinte recomecaria do inicio e o laco seria infinito.
+                if (resumeHandle == 0)
+                {
+                    break;
                 }
             }
         }
